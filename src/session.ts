@@ -1,6 +1,8 @@
 import axios, { AxiosInstance } from "axios";
 import { wrapper } from "axios-cookiejar-support";
 import { CookieJar } from "tough-cookie";
+import fs from "node:fs";
+import path from "node:path";
 import {
   LoginFailedError,
   NetworkError,
@@ -25,27 +27,65 @@ const BROWSER_HEADERS = {
   Origin: "https://portal.sejong.ac.kr",
 };
 
-// TLS bypass for portal's legacy SSL config
-// axios-cookiejar-support doesn't support custom httpsAgent,
-// so we use the environment variable approach
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
+const SESSION_STORE_PATH = path.join(
+  process.env.SEJONG_SESSION_DIR ?? process.cwd(),
+  ".sejong-session.json",
+);
 
 export interface SessionInfo {
   userId: string;
   runningSejong: string;
   loginDt: string;
   http: AxiosInstance;
+  jar: CookieJar;
 }
 
 export function makeAddParam(data: Record<string, string>): string {
   const json = JSON.stringify(data);
-  const encoded = encodeURIComponent(json);
-  return Buffer.from(encoded).toString("base64");
+  return Buffer.from(encodeURIComponent(json)).toString("base64");
 }
 
-function createHttpClient(): AxiosInstance {
-  const jar = new CookieJar();
-  const client = wrapper(
+// ── Session Persistence ──
+
+interface StoredSession {
+  userId: string;
+  runningSejong: string;
+  loginDt: string;
+  cookies: unknown;
+  timestamp: number;
+}
+
+function loadStoredSession(): StoredSession | null {
+  try {
+    if (!fs.existsSync(SESSION_STORE_PATH)) return null;
+    const raw = JSON.parse(fs.readFileSync(SESSION_STORE_PATH, "utf-8"));
+    // Expire after 25 minutes (portal timeout is ~30min)
+    if (Date.now() - raw.timestamp > 25 * 60 * 1000) return null;
+    return raw;
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(session: SessionInfo): void {
+  try {
+    const stored: StoredSession = {
+      userId: session.userId,
+      runningSejong: session.runningSejong,
+      loginDt: session.loginDt,
+      cookies: session.jar.serializeSync(),
+      timestamp: Date.now(),
+    };
+    fs.writeFileSync(SESSION_STORE_PATH, JSON.stringify(stored));
+  } catch {
+    // non-critical
+  }
+}
+
+function createHttpClient(jar: CookieJar): AxiosInstance {
+  return wrapper(
     axios.create({
       jar,
       headers: { ...BROWSER_HEADERS },
@@ -54,20 +94,67 @@ function createHttpClient(): AxiosInstance {
       validateStatus: () => true,
     }),
   );
-  return client;
 }
 
+// ── Session Creation / Restoration ──
+
+/**
+ * Try to restore a previous session. If valid, skip SSO login + WebSquare init.
+ * This reuses the SAME JSESSIONID and RUNNING_SEJONG, so the portal sees
+ * "the same browser session switching pages" — not a new concurrent session.
+ */
 export async function createSession(
   username: string,
   password: string,
 ): Promise<SessionInfo> {
-  const http = createHttpClient();
+  // Try restoring previous session
+  const stored = loadStoredSession();
+  if (stored && stored.userId === username) {
+    const jar = CookieJar.deserializeSync(stored.cookies as string);
+    const http = createHttpClient(jar);
+    http.defaults.headers.common["Referer"] =
+      `${SJPT}/main/view/Login/doSsoLogin.do?p=`;
+    http.defaults.headers.common["Origin"] = SJPT;
+
+    // Validate session is still alive with a lightweight call
+    const resetAp = makeAddParam({
+      processMessage: "",
+      _runIntgUsrNo: stored.userId,
+      _runPgLoginDt: stored.loginDt,
+      _runningSejong: stored.runningSejong,
+    });
+    const check = await http.post(
+      `${SJPT}/main/view/Main/doResetSessionTime.do`,
+      null,
+      { params: { addParam: resetAp }, headers: JSON_HEADERS },
+    );
+    if (!check.data._SUBMIT_ERROR_) {
+      // Session still alive! Reuse it.
+      return {
+        userId: stored.userId,
+        runningSejong: stored.runningSejong,
+        loginDt: stored.loginDt,
+        http,
+        jar,
+      };
+    }
+    // Session expired — fall through to fresh login
+  }
+
+  // Fresh login
+  return freshLogin(username, password);
+}
+
+async function freshLogin(
+  username: string,
+  password: string,
+): Promise<SessionInfo> {
+  const jar = new CookieJar();
+  const http = createHttpClient(jar);
 
   try {
-    // Step 1: GET login page → session cookies
     await http.get(PORTAL_LOGIN_PAGE);
 
-    // Step 2: POST SSO login
     const loginResp = await http.post(
       PORTAL_LOGIN_ACTION,
       new URLSearchParams({
@@ -79,16 +166,12 @@ export async function createSession(
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
     );
 
-    const body = typeof loginResp.data === "string"
-      ? loginResp.data
-      : JSON.stringify(loginResp.data);
+    const body =
+      typeof loginResp.data === "string"
+        ? loginResp.data
+        : JSON.stringify(loginResp.data);
     const resultMatch = body.match(/var result = '([^']+)'/);
     const resultVal = resultMatch?.[1] ?? "";
-
-    // Debug: remove after verification
-    if (!resultMatch) {
-      console.error("[session] Login response type:", typeof loginResp.data, "first 200:", body.substring(0, 200));
-    }
 
     if (resultVal === "erridpwd") {
       throw new LoginFailedError("아이디 또는 비밀번호가 올바르지 않습니다");
@@ -102,13 +185,11 @@ export async function createSession(
       throw new LoginFailedError(`로그인 실패: ${resultVal}`);
     }
 
-    // Step 3: Follow JS redirect to sjpt portal
     const redirectMatch = body.match(/location\.replace\(['"]([^'"]+)['"]\)/);
     const redirectUrl =
       redirectMatch?.[1] ?? `${SJPT}/main/view/Login/doSsoLogin.do?p=`;
     await http.get(redirectUrl);
 
-    // Update headers for sjpt domain
     http.defaults.headers.common["Referer"] =
       `${SJPT}/main/view/Login/doSsoLogin.do?p=`;
     http.defaults.headers.common["Origin"] = SJPT;
@@ -118,6 +199,7 @@ export async function createSession(
       runningSejong: "",
       loginDt: "",
       http,
+      jar,
     };
   } catch (e) {
     if (e instanceof LoginFailedError) throw e;
@@ -131,7 +213,12 @@ export async function createSession(
   }
 }
 
+// ── WebSquare Init (only called once per session) ──
+
 export async function initWebSquare(session: SessionInfo): Promise<void> {
+  // Skip if already initialized (restored session)
+  if (session.runningSejong) return;
+
   const { http } = session;
   const emptyAp = makeAddParam({
     _runIntgUsrNo: "",
@@ -140,7 +227,6 @@ export async function initWebSquare(session: SessionInfo): Promise<void> {
   });
 
   try {
-    // Step 1: initUserInfo (empty session)
     const infoResp = await http.post(
       `${SJPT}/main/sys/UserInfo/initUserInfo.do`,
       null,
@@ -166,14 +252,11 @@ export async function initWebSquare(session: SessionInfo): Promise<void> {
       _runningSejong: session.runningSejong,
     });
 
-    // Steps 2-7: WebSquare init sequence
     await http.post(`${SJPT}/main/view/Menu/doListUserMyMenuList.do`, null, {
-      params: { addParam: baseAp },
-      headers: JSON_HEADERS,
+      params: { addParam: baseAp }, headers: JSON_HEADERS,
     });
     await http.post(`${SJPT}/sys/getRunTimeSystem.do`, null, {
-      params: { addParam: baseAp },
-      headers: JSON_HEADERS,
+      params: { addParam: baseAp }, headers: JSON_HEADERS,
     });
     await http.post(
       `${SJPT}/main/view/Main/doCoMessageList.do`,
@@ -194,19 +277,23 @@ export async function initWebSquare(session: SessionInfo): Promise<void> {
       },
     };
     await http.post(`${SJPT}/main/view/Main/doNoticeCheck.do`, menuBody, {
-      params: { addParam: baseAp },
-      headers: JSON_HEADERS,
+      params: { addParam: baseAp }, headers: JSON_HEADERS,
     });
     await http.post(
       `${SJPT}/main/view/Menu/doListUserMenuListLeft.do`,
       menuBody,
       { params: { addParam: baseAp }, headers: JSON_HEADERS },
     );
+
+    // Persist the full session (cookies + RUNNING_SEJONG)
+    saveSession(session);
   } catch (e) {
     if (e instanceof PortalError || e instanceof LoginFailedError) throw e;
     throw new PortalError(`WebSquare init failed: ${e}`);
   }
 }
+
+// ── Page Init ──
 
 export async function initPage(
   session: SessionInfo,
@@ -221,10 +308,11 @@ export async function initPage(
     _runningSejong: runningSejong,
   });
 
+  // initUserInfo with pgmKey — signals page transition to server
   await http.post(`${SJPT}/main/sys/UserInfo/initUserInfo.do`, null, {
-    params: { addParam: pageAp },
-    headers: JSON_HEADERS,
+    params: { addParam: pageAp }, headers: JSON_HEADERS,
   });
+
   await http.post(
     `${SJPT}/main/sys/UserRole/initUserRole.do`,
     {
@@ -237,6 +325,20 @@ export async function initPage(
     },
     { params: { addParam: pageAp }, headers: JSON_HEADERS },
   );
+
+  // Session keepalive
+  const resetAp = makeAddParam({
+    processMessage: "",
+    _runIntgUsrNo: userId,
+    _runPgLoginDt: loginDt,
+    _runningSejong: runningSejong,
+  });
+  await http.post(`${SJPT}/main/view/Main/doResetSessionTime.do`, null, {
+    params: { addParam: resetAp }, headers: JSON_HEADERS,
+  });
+
+  // Persist after each page init
+  saveSession(session);
 
   return pageAp;
 }

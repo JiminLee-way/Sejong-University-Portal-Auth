@@ -88,3 +88,57 @@ router.post("/all", async (req: Request, res: Response) => {
     handleError(e, res);
   }
 });
+
+// ── Library Seats ──
+
+router.post("/library/rooms", async (req: Request, res: Response) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) { res.status(400).json({ error: "username and password required" }); return; }
+    const client = new SejongClient();
+    await client.login(username, password);
+    res.json(await client.getLibraryRooms());
+  } catch (e) { handleError(e, res); }
+});
+
+router.post("/library/my-seat", async (req: Request, res: Response) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) { res.status(400).json({ error: "username and password required" }); return; }
+    const client = new SejongClient();
+    await client.login(username, password);
+    res.json(await client.getMySeat());
+  } catch (e) { handleError(e, res); }
+});
+
+router.post("/library/seat-map", async (req: Request, res: Response) => {
+  try {
+    const { username, password, roomNo } = req.body;
+    if (!username || !password) { res.status(400).json({ error: "username and password required" }); return; }
+    const client = new SejongClient();
+    await client.login(username, password);
+    res.json(await client.getSeatMap(Number(roomNo) || 11));
+  } catch (e) { handleError(e, res); }
+});
+
+router.post("/library/facilities", async (req: Request, res: Response) => {
+  try {
+    const { username, password, type } = req.body;
+    if (!username || !password) { res.status(400).json({ error: "username and password required" }); return; }
+    const client = new SejongClient();
+    await client.login(username, password);
+    res.json(await client.getFacilityRooms(type || "studyroom"));
+  } catch (e) { handleError(e, res); }
+});
+
+// ── Student Card ──
+
+router.post("/student-card", async (req: Request, res: Response) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) { res.status(400).json({ error: "username and password required" }); return; }
+    const client = new SejongClient();
+    await client.login(username, password);
+    res.json(await client.getStudentCard());
+  } catch (e) { handleError(e, res); }
+});

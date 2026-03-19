@@ -103,3 +103,49 @@ export interface ScholarshipReport {
   scholarships: Scholarship[];
   totalAmount: number;
 }
+
+// ── Library Seats ──
+
+export interface ReadingRoom {
+  roomNo: number;
+  name: string;
+  usedSeats: number;
+  totalSeats: number;
+  occupancyRate: number;
+}
+
+export interface MySeat {
+  roomName: string;
+  seatNumber: string;
+  usageTime: string;
+  extensionCount: number;
+  isAssigned: boolean;
+}
+
+export type SeatStatusType = "available" | "occupied" | "reserved";
+
+export interface SeatStatus {
+  seatNumber: number;
+  status: SeatStatusType;
+}
+
+export interface SeatMapResponse {
+  roomNo: number;
+  roomName: string;
+  seats: SeatStatus[];
+}
+
+export type FacilityType = "studyroom" | "cinema" | "slounge";
+
+export interface FacilityRoom {
+  facilityType: FacilityType;
+  name: string;
+  available: boolean;
+}
+
+// ── Student Card ──
+
+export interface StudentCard {
+  cardNo: string;
+  isIssued: boolean;
+}

@@ -8,6 +8,14 @@ export type {
   EnrollmentReport,
   Scholarship,
   ScholarshipReport,
+  ReadingRoom,
+  MySeat,
+  SeatStatus,
+  SeatStatusType,
+  SeatMapResponse,
+  FacilityRoom,
+  FacilityType,
+  StudentCard,
 } from "./types.js";
 
 export { Semester, parseSemester } from "./types.js";
