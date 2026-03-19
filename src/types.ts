@@ -324,11 +324,17 @@ export interface SeatActionResult {
 
 export type SeatLayoutCell =
   | { type: "seat"; seatId: number; status: SeatStatusType }
-  | { type: "empty" }
-  | { type: "label"; text: string };
+  | { type: "gap"; width: number }
+  | { type: "empty" };
+
+export interface SeatLayoutRow {
+  cells: SeatLayoutCell[];
+  gapAfter?: number;
+}
 
 export interface SeatLayoutBlock {
-  rows: SeatLayoutCell[][];
+  rows: SeatLayoutRow[];
+  style?: { marginTop?: number; marginLeft?: number };
 }
 
 export interface SeatLayoutResponse {

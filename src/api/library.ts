@@ -170,7 +170,16 @@ export async function fetchSeatMap(
   }
 }
 
-/** Fetch seat layout — physical grid matching the actual room layout */
+/**
+ * Fetch seat layout — physical grid matching the actual room layout.
+ *
+ * Parses the HTML table structure from libseat exactly:
+ * - `<td class="desk">` → available seat
+ * - `<td class="desk_over">` → occupied seat
+ * - `<td style="width:55px">` → gap (aisle between desk groups)
+ * - `<tr style="height:54px">` → vertical gap between rows
+ * - `<table style="margin-top:45px; margin-left:78px">` → block position
+ */
 export async function fetchSeatLayout(
   http: AxiosInstance,
   token: string,
@@ -181,50 +190,80 @@ export async function fetchSeatLayout(
       params: { param_room_no: roomNo, token },
     });
     const html = typeof resp.data === "string" ? resp.data : "";
-
-    // Occupied seats from JS
-    const occupiedIds = new Set<number>();
-    const blockPattern = /getElementById\('(\d+)'\)/g;
-    let m;
-    while ((m = blockPattern.exec(html)) !== null) {
-      occupiedIds.add(parseInt(m[1], 10));
-    }
-
-    // Parse tables into layout blocks
     const $ = cheerio.load(html);
+
     const blocks: import("../types.js").SeatLayoutBlock[] = [];
     let totalSeats = 0;
+    const occupiedSeats: number[] = [];
 
     $("table").each((_, tableEl) => {
       const tableHtml = $(tableEl).html() || "";
-      // Only process tables containing seat numbers
-      if (!/>\d+</.test(tableHtml)) return;
+      // Only tables with seat links: setSeat('roomNo','seatNo')
+      if (!tableHtml.includes("setSeat")) return;
 
-      const rows: import("../types.js").SeatLayoutCell[][] = [];
+      // Parse block position from inline style
+      const tableStyle = $(tableEl).attr("style") || "";
+      const mtMatch = tableStyle.match(/margin-top:\s*(-?\d+)px/);
+      const mlMatch = tableStyle.match(/margin-left:\s*(-?\d+)px/);
+      const style = {
+        marginTop: mtMatch ? parseInt(mtMatch[1], 10) : 0,
+        marginLeft: mlMatch ? parseInt(mlMatch[1], 10) : 0,
+      };
+
+      const rows: import("../types.js").SeatLayoutRow[] = [];
+
       $(tableEl).find("tr").each((_, tr) => {
-        const row: import("../types.js").SeatLayoutCell[] = [];
+        // Check if this is a spacing row (height gap)
+        const trStyle = $(tr).attr("style") || "";
+        const hMatch = trStyle.match(/height:\s*(\d+)px/);
+        if (hMatch && $(tr).find("td").length === 0) {
+          // Pure gap row — attach gap to previous row
+          if (rows.length > 0) {
+            rows[rows.length - 1].gapAfter = parseInt(hMatch[1], 10);
+          }
+          return;
+        }
+
+        const cells: import("../types.js").SeatLayoutCell[] = [];
         let hasSeat = false;
+
         $(tr).find("td").each((_, td) => {
+          const cls = $(td).attr("class") || "";
+          const tdStyle = $(td).attr("style") || "";
+          const id = $(td).attr("id") || "";
           const text = $(td).text().trim();
-          if (/^\d+$/.test(text)) {
-            const seatId = parseInt(text, 10);
-            totalSeats++;
-            hasSeat = true;
-            row.push({
-              type: "seat",
-              seatId,
-              status: occupiedIds.has(seatId) ? "occupied" : "available",
-            });
-          } else if (text) {
-            row.push({ type: "label", text });
+
+          if (cls.startsWith("desk")) {
+            // Seat cell — desk = available, desk_over = occupied
+            const seatId = parseInt(id || text, 10);
+            if (!isNaN(seatId)) {
+              const isOccupied = cls.includes("_over");
+              totalSeats++;
+              if (isOccupied) occupiedSeats.push(seatId);
+              hasSeat = true;
+              cells.push({
+                type: "seat",
+                seatId,
+                status: isOccupied ? "occupied" : "available",
+              });
+            }
           } else {
-            row.push({ type: "empty" });
+            // Gap/spacer cell — extract width
+            const wMatch = tdStyle.match(/width:\s*(\d+)px/);
+            if (wMatch) {
+              cells.push({ type: "gap", width: parseInt(wMatch[1], 10) });
+            } else {
+              cells.push({ type: "empty" });
+            }
           }
         });
-        if (row.length > 0 && hasSeat) rows.push(row);
+
+        if (cells.length > 0 && hasSeat) {
+          rows.push({ cells });
+        }
       });
 
-      if (rows.length > 0) blocks.push({ rows });
+      if (rows.length > 0) blocks.push({ rows, style });
     });
 
     const roomName = $("h4, h5, .room-name").first().text().trim() || `열람실 ${roomNo}`;
@@ -233,7 +272,7 @@ export async function fetchSeatLayout(
       roomNo,
       roomName,
       totalSeats,
-      occupiedSeats: [...occupiedIds].sort((a, b) => a - b),
+      occupiedSeats: occupiedSeats.sort((a, b) => a - b),
       blocks,
     };
   } catch (e) {
