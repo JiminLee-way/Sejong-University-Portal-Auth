@@ -206,3 +206,33 @@ export async function fetchFacilityRooms(
     throw new ParseError(`Failed to parse facility rooms: ${e}`);
   }
 }
+
+/** Fetch study room reservation page to get available rooms/times */
+export async function fetchStudyRoomReservation(
+  http: AxiosInstance,
+  token: string,
+): Promise<{ rooms: { id: string; name: string }[] }> {
+  try {
+    const resp = await http.get(`${LIBSEAT_BASE}/sroomReserveMain.php`, {
+      params: { token },
+    });
+    const $ = cheerio.load(resp.data);
+    const rooms: { id: string; name: string }[] = [];
+
+    $("a[href*='sroomMap'], .room-item, option, li").each((_, el) => {
+      const text = $(el).text().trim();
+      const href = $(el).attr("href") || $(el).attr("value") || "";
+      const idMatch = href.match(/room_no=(\d+)/) || href.match(/^(\d+)$/);
+      if (text && text.length < 100 && (idMatch || text.includes("스터디룸"))) {
+        rooms.push({
+          id: idMatch?.[1] || text,
+          name: text.replace(/\s+/g, " "),
+        });
+      }
+    });
+
+    return { rooms };
+  } catch (e) {
+    throw new ParseError(`Failed to parse study room reservation: ${e}`);
+  }
+}

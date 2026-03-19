@@ -33,8 +33,8 @@ async function postSeatAction(
       return {
         success: true,
         action,
-        roomName: params.roomNo ? `열람실 ${params.roomNo}` : undefined,
-        seatNumber: params.seatNo ? Number(params.seatNo) : undefined,
+        roomName: params.room_no ? `열람실 ${params.room_no}` : params.roomNo ? `열람실 ${params.roomNo}` : undefined,
+        seatNumber: params.seat_no ? Number(params.seat_no) : params.seatNo ? Number(params.seatNo) : undefined,
         message: msg || "성공",
       };
     }
@@ -46,7 +46,26 @@ async function postSeatAction(
   }
 }
 
-export async function reserveSeat(
+// ── 좌석 예약 (setSeat) ──
+
+export async function setSeat(
+  http: AxiosInstance,
+  token: string,
+  userId: string,
+  roomNo: number,
+  seatNo: number,
+): Promise<SeatActionResult> {
+  return postSeatAction(http, "setSeat.php", {
+    token,
+    userID: userId,
+    room_no: String(roomNo),
+    seat_no: String(seatNo),
+  }, "reserve");
+}
+
+// ── 좌석 발권확정 (confirmSeat) ──
+
+export async function confirmSeat(
   http: AxiosInstance,
   token: string,
   userId: string,
@@ -56,10 +75,12 @@ export async function reserveSeat(
   return postSeatAction(http, "confirmSeat.php", {
     token,
     userID: userId,
-    roomNo: String(roomNo),
-    seatNo: String(seatNo),
+    room_no: String(roomNo),
+    seat_no: String(seatNo),
   }, "reserve");
 }
+
+// ── 좌석 연장 (extdSeat) ──
 
 export async function extendSeat(
   http: AxiosInstance,
@@ -76,6 +97,8 @@ export async function extendSeat(
   }, "extend");
 }
 
+// ── 좌석 반납 (returnSeat) ──
+
 export async function returnSeat(
   http: AxiosInstance,
   token: string,
@@ -90,3 +113,43 @@ export async function returnSeat(
     seatNo,
   }, "return");
 }
+
+// ── 스터디룸 예약 (sroomReserve) ──
+
+export async function reserveStudyRoom(
+  http: AxiosInstance,
+  token: string,
+  userId: string,
+  roomNo: number,
+  date: string,
+  startTime: number,
+  endTime: number,
+): Promise<SeatActionResult> {
+  return postSeatAction(http, "sroomReserve.php", {
+    token,
+    userID: userId,
+    room_no: String(roomNo),
+    date,
+    startTime: String(startTime),
+    endTime: String(endTime),
+  }, "reserve");
+}
+
+// ── 스터디룸 취소 (cancelSroom) ──
+
+export async function cancelStudyRoom(
+  http: AxiosInstance,
+  token: string,
+  userId: string,
+  reserveNo: string,
+): Promise<SeatActionResult> {
+  return postSeatAction(http, "cancelSroom.php", {
+    token,
+    userID: userId,
+    reserveNo,
+  }, "return");
+}
+
+// ── 하위 호환용 alias ──
+
+export const reserveSeat = setSeat;

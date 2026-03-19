@@ -16,11 +16,15 @@ import {
   fetchMySeat,
   fetchSeatMap,
   fetchFacilityRooms,
+  fetchStudyRoomReservation,
 } from "./api/library.js";
 import {
-  reserveSeat as doReserveSeat,
+  setSeat as doSetSeat,
+  confirmSeat as doConfirmSeat,
   extendSeat as doExtendSeat,
   returnSeat as doReturnSeat,
+  reserveStudyRoom as doReserveStudyRoom,
+  cancelStudyRoom as doCancelStudyRoom,
 } from "./api/seatactions.js";
 import { LoginFailedError, SessionExpiredError, NetworkError, PortalError } from "./errors.js";
 import { createSjappClient } from "./http.js";
@@ -311,21 +315,48 @@ export class SejongClient {
     return fetchFacilityRooms(http, token, type);
   }
 
+  /** 좌석 예약 (setSeat) */
   async reserveSeat(roomNo: number, seatNo: number): Promise<SeatActionResult> {
     const { http, token } = await this.ensureLibseat();
-    return doReserveSeat(http, token, this.userId, roomNo, seatNo);
+    return doSetSeat(http, token, this.userId, roomNo, seatNo);
   }
 
+  /** 좌석 발권확정 (confirmSeat) — 게이트 통과 후 */
+  async confirmSeat(roomNo: number, seatNo: number): Promise<SeatActionResult> {
+    const { http, token } = await this.ensureLibseat();
+    return doConfirmSeat(http, token, this.userId, roomNo, seatNo);
+  }
+
+  /** 좌석 연장 (extdSeat) */
   async extendSeat(): Promise<SeatActionResult> {
     const { http, token } = await this.ensureLibseat();
     const seat = await fetchMySeat(http, token);
     return doExtendSeat(http, token, this.userId, seat.seatNumber, seat.seatNumber);
   }
 
+  /** 좌석 반납 (returnSeat) */
   async returnSeat(): Promise<SeatActionResult> {
     const { http, token } = await this.ensureLibseat();
     const seat = await fetchMySeat(http, token);
     return doReturnSeat(http, token, this.userId, seat.seatNumber, seat.seatNumber);
+  }
+
+  /** 스터디룸 예약 가능 목록 */
+  async getStudyRoomReservation(): Promise<{ rooms: { id: string; name: string }[] }> {
+    const { http, token } = await this.ensureLibseat();
+    return fetchStudyRoomReservation(http, token);
+  }
+
+  /** 스터디룸 예약 */
+  async reserveStudyRoom(roomNo: number, date: string, startTime: number, endTime: number): Promise<SeatActionResult> {
+    const { http, token } = await this.ensureLibseat();
+    return doReserveStudyRoom(http, token, this.userId, roomNo, date, startTime, endTime);
+  }
+
+  /** 스터디룸 예약 취소 */
+  async cancelStudyRoom(reserveNo: string): Promise<SeatActionResult> {
+    const { http, token } = await this.ensureLibseat();
+    return doCancelStudyRoom(http, token, this.userId, reserveNo);
   }
 
   // ── Internal ──
