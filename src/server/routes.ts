@@ -21,6 +21,7 @@ function handleError(e: unknown, res: Response): void {
   }
 }
 
+/** 1회 로그인으로 요청된 기능 모두 조회 */
 router.post("/grades", async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
@@ -30,8 +31,7 @@ router.post("/grades", async (req: Request, res: Response) => {
     }
     const client = new SejongClient();
     await client.login(username, password);
-    const report = await client.getGrades();
-    res.json(report);
+    res.json(await client.getGrades());
   } catch (e) {
     handleError(e, res);
   }
@@ -46,8 +46,7 @@ router.post("/enrollments", async (req: Request, res: Response) => {
     }
     const client = new SejongClient();
     await client.login(username, password);
-    const report = await client.getEnrollments(year, semesterCode);
-    res.json(report);
+    res.json(await client.getEnrollments(year, semesterCode));
   } catch (e) {
     handleError(e, res);
   }
@@ -62,8 +61,29 @@ router.post("/scholarships", async (req: Request, res: Response) => {
     }
     const client = new SejongClient();
     await client.login(username, password);
-    const report = await client.getScholarships();
-    res.json(report);
+    res.json(await client.getScholarships());
+  } catch (e) {
+    handleError(e, res);
+  }
+});
+
+/** 한번 로그인으로 성적+수강+장학 전부 조회 */
+router.post("/all", async (req: Request, res: Response) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      res.status(400).json({ error: "username and password required" });
+      return;
+    }
+    const client = new SejongClient();
+    await client.login(username, password);
+
+    // 순차 실행 — 같은 세션에서 페이지 전환
+    const grades = await client.getGrades();
+    const enrollments = await client.getEnrollments();
+    const scholarships = await client.getScholarships();
+
+    res.json({ grades, enrollments, scholarships });
   } catch (e) {
     handleError(e, res);
   }

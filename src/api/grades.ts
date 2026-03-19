@@ -16,6 +16,13 @@ export async function fetchGrades(
   const { http, userId } = session;
 
   try {
+    // Page onload (required by WebSquare)
+    await http.post(
+      `${SJPT}/sch/sch/sug/SugRecordQ/doOnload.do`,
+      null,
+      { params: { addParam }, headers: JSON_HEADERS },
+    );
+
     // Student info
     const studentResp = await http.post(
       `${SJPT}/sch/sch/sys/SchStudentBaseInfo/doStudent.do`,

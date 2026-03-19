@@ -228,7 +228,7 @@ export async function initPage(
   await http.post(
     `${SJPT}/main/sys/UserRole/initUserRole.do`,
     {
-      pbForceLog: "false",
+      pbForceLog: "true",
       _runPgmKey: pgmKey,
       _runSysKey: "SCH",
       _runIntgUsrNo: userId,
