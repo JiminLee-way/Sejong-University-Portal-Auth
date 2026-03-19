@@ -8,6 +8,7 @@
 
 - **JWT 인증** — 로그인, 로그아웃, 토큰 갱신, 프로필 조회
 - **모바일 학생증 QR** — 공식 앱과 동일한 동적 QR 코드 생성 (59초 갱신)
+- **시간표 조회** — 요일/교시별 시간표 + 수강 과목 + 학점 요약
 - **성적 조회** — 전체/당학기/학기별 성적 + GPA
 - **공지사항** — 8개 카테고리 목록 + 상세 (인증 불필요)
 - **세종뉴스** — 교내뉴스, 언론속세종, 보도자료, 웹진 5종
@@ -39,6 +40,15 @@ console.log(`GPA: ${grades.overallSummary.avgMrks}`);
 const qr = await client.generateStudentQr();
 fs.writeFileSync('qr.png', Buffer.from(qr.qrCodeImage, 'base64'));
 
+// 시간표 조회
+const semesters = await client.getAvailableSemesters();
+const tt = await client.getTimetable('2026', '10');
+tt.courses.forEach(c => console.log(`${c.curiNm} ${c.lesnTime} ${c.roomNmAlias}`));
+
+// 수강 과목 + 학점
+const enrolled = await client.getEnrolledCourses('2026', '10');
+console.log(`${enrolled.creditSummary.totalCredits}학점 ${enrolled.creditSummary.totalCourses}과목`);
+
 // 공지사항 (로그인 불필요)
 const notices = await client.getNotices('academic', { page: 0, size: 5 });
 ```
@@ -56,6 +66,9 @@ const notices = await client.getNotices('academic', { page: 0, size: 5 });
 | `refreshToken()` | O | 토큰 갱신 |
 | `logout()` | O | 로그아웃 |
 | `generateStudentQr(refreshKey?, size?)` | O | 모바일 학생증 QR 코드 생성 |
+| `getAvailableSemesters()` | O | 조회 가능한 학기 목록 |
+| `getTimetable(year, smtCd)` | O | 시간표 (요일/교시별) |
+| `getEnrolledCourses(year, smtCd)` | O | 수강 과목 목록 + 학점 요약 |
 | `getGrades()` | O | 전체 성적 |
 | `getCurrentGrades()` | O | 당학기 성적 |
 | `getSemesterGrades(year, smtCd)` | O | 특정 학기 성적 |
@@ -130,6 +143,61 @@ setInterval(async () => {
   const qr = await client.generateStudentQr(refreshKey);
   // qr.qrCodeImage를 화면에 표시
 }, 59000);
+```
+
+### 시간표 조회 (`getTimetable`)
+
+```json
+{
+  "year": "2026",
+  "smtCd": "10",
+  "courses": [
+    {
+      "dayCd": "1",
+      "hourCd": "15",
+      "timeSlot": "15:00",
+      "curiNm": "알고리즘",
+      "roomNmAlias": "센B105",
+      "empNm": "홍교수 교수",
+      "className": "001",
+      "lesnTime": "월수15:00-16:30",
+      "curiNo": "012169",
+      "curiTypeCdNm": "전필"
+    }
+  ],
+  "cyberLectures": ["경영학"]
+}
+```
+
+> `dayCd`: 1=월, 2=화, 3=수, 4=목, 5=금, 6=토. 각 30분 슬롯별 1개 레코드.
+
+### 수강 과목 (`getEnrolledCourses`)
+
+```json
+{
+  "courses": [
+    {
+      "id": "012169-001",
+      "name": "알고리즘",
+      "category": "전필",
+      "credits": 3,
+      "building": "센B105",
+      "professor": "홍교수"
+    }
+  ],
+  "creditSummary": {
+    "totalCourses": 5,
+    "totalCredits": 15,
+    "major": {
+      "required": { "courses": 2, "credits": 6 },
+      "elective": { "courses": 2, "credits": 6 }
+    },
+    "general": {
+      "required": { "courses": 1, "credits": 3 },
+      "elective": { "courses": 0, "credits": 0 }
+    }
+  }
+}
 ```
 
 ### 성적 조회 (`getGrades`)
@@ -302,6 +370,7 @@ src/
 ├── api/
 │   ├── auth.ts           # 인증
 │   ├── qr.ts             # 학생증 QR 코드
+│   ├── timetable.ts      # 시간표 + 수강 과목
 │   ├── grades.ts         # 성적
 │   ├── notices.ts        # 공지사항
 │   ├── news.ts           # 세종뉴스
