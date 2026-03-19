@@ -1,13 +1,34 @@
 export { SejongClient } from "./client.js";
 
 export type {
-  Grade,
-  GradeReport,
-  CreditSummary,
-  Enrollment,
-  EnrollmentReport,
-  Scholarship,
-  ScholarshipReport,
+  ApiResponse,
+  PagedData,
+  AuthToken,
+  UserProfile,
+  GradeAllResponse,
+  GradeCurrentResponse,
+  GradeSemester,
+  GradeCourse,
+  GradeOverallSummary,
+  SemesterSummary,
+  NoticeCategory,
+  Notice,
+  NewsType,
+  News,
+  FeedType,
+  Feed,
+  FeedLatestResponse,
+  Schedule,
+  ScheduleCategory,
+  ScheduleTag,
+  CreateScheduleRequest,
+  QnA,
+  QnACategory,
+  CreateQnARequest,
+  Staff,
+  Notification,
+  UnreadCount,
+  NotificationSettings,
   ReadingRoom,
   MySeat,
   SeatStatus,
@@ -15,10 +36,8 @@ export type {
   SeatMapResponse,
   FacilityRoom,
   FacilityType,
-  StudentCard,
+  SeatActionResult,
 } from "./types.js";
-
-export { Semester, parseSemester } from "./types.js";
 
 export {
   SejongAuthError,
