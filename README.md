@@ -247,6 +247,49 @@ try {
 
 > `sjapp.sejong.ac.kr`는 세종대 공식 모바일 앱의 백엔드입니다. portal.sejong.ac.kr의 WebSquare가 아닌 순수 REST API를 사용하므로 브라우저 세션 충돌이 없습니다.
 
+## NFC 출입 (S1Pass) 프로토콜 분석
+
+> 이 라이브러리에서는 NFC 기능을 제공하지 않지만, APK 분석으로 프로토콜을 완전히 해독하였으므로 기록합니다.
+
+세종대 모바일 학생증의 NFC 출입(S1Pass)은 Android HCE(Host Card Emulation)로 동작합니다.
+
+```
+AID: FF737070736A67 (ASCII: \xFFsppsjg)
+Service: android.nfc.cardemulation.HostApduService
+저장소: EncryptedSharedPreferences (AES256-GCM)
+```
+
+**통신 흐름:**
+
+```
+출입 리더기                          학생 스마트폰 (S1PassManager)
+    │                                        │
+    │──── SELECT APDU (AID: FF737070736A67) ──►│
+    │                                        │ cardNo = S1PassConfig.getCardNo()
+    │                                        │ response = cardNo.getBytes(UTF-8) + SELECT_OK_SW
+    │◄── [cardNo bytes] + [0x90, 0x00] ──────│
+    │                                        │
+    │  (서버에서 cardNo 검증)                   │
+    ▼                                        ▼
+   출입 허용/거부
+```
+
+**APDU 응답 구조:**
+
+```
+cardNo = "250128940"
+응답 = [0x32, 0x35, 0x30, 0x31, 0x32, 0x38, 0x39, 0x34, 0x30, 0x90, 0x00]
+        \___________________ cardNo UTF-8 __________________/  \_ OK SW _/
+```
+
+- `cardNo`는 로그인 응답의 `cardNo` 필드와 동일 (Android), iOS는 `cardNoIos` 사용
+- 암호화 없이 cardNo 평문을 전송 (리더기-서버 간에서 검증)
+- `requireDeviceUnlock="false"`, `requireDeviceScreenOn="false"` — 잠금 해제 불필요
+
+**재현 방법:** Android 앱에서 `HostApduService`를 구현하고, 위 AID와 cardNo 응답 로직을 적용하면 됩니다. Node.js에서는 물리적 NFC 하드웨어가 없으므로 불가능합니다.
+
+---
+
 ## Project Structure
 
 ```
