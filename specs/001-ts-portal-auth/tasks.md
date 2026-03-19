@@ -18,10 +18,10 @@
 
 **Purpose**: Project initialization and TypeScript/Node.js tooling
 
-- [ ] T001 Initialize Node.js project with `npm init` and create `package.json` with name "sejong-auth", dependencies (axios, express, zod, tough-cookie, axios-cookiejar-support), devDependencies (typescript, vitest, @types/express, @types/tough-cookie, tsx)
-- [ ] T002 Create `tsconfig.json` with strict mode, ESM output, target ES2022, outDir dist/, rootDir src/
-- [ ] T003 [P] Create directory structure: `src/`, `src/api/`, `src/server/`, `tests/unit/`, `tests/integration/`, `tests/server/`
-- [ ] T004 [P] Add npm scripts to package.json: `build`, `dev`, `test`, `test:integration`, `start`
+- [x] T001 Initialize Node.js project with `npm init` and create `package.json` with name "sejong-auth", dependencies (axios, express, zod, tough-cookie, axios-cookiejar-support), devDependencies (typescript, vitest, @types/express, @types/tough-cookie, tsx)
+- [x] T002 Create `tsconfig.json` with strict mode, ESM output, target ES2022, outDir dist/, rootDir src/
+- [x] T003 [P] Create directory structure: `src/`, `src/api/`, `src/server/`, `tests/unit/`, `tests/integration/`, `tests/server/`
+- [x] T004 [P] Add npm scripts to package.json: `build`, `dev`, `test`, `test:integration`, `start`
 
 **Checkpoint**: `npm run build` compiles with no errors (empty project)
 
@@ -33,12 +33,12 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 [P] Define Semester enum and all data types (Grade, CreditSummary, GradeReport, Enrollment, EnrollmentReport, Scholarship, ScholarshipReport) in `src/types.ts` per data-model.md
-- [ ] T006 [P] Implement custom error classes (SejongAuthError, LoginFailedError, SessionExpiredError, NetworkError, PortalError, ParseError) in `src/errors.ts`
-- [ ] T007 Implement SSO login flow in `src/session.ts`: createSession() function that performs GET loginSSL.jsp → POST login_action.jsp → extract result code → follow JS redirect → return cookie jar. Include User-Agent/Referer headers, TLS bypass via https.Agent, login result code parsing (OK/erridpwd/pwdNeedChg) per research.md R1
-- [ ] T008 Implement WebSquare session initialization in `src/session.ts`: initWebSquare() function that performs the 7-step init sequence (initUserInfo → doListUserMyMenuList → getRunTimeSystem → doCoMessageList → doListUserMenuListTop → doNoticeCheck → doListUserMenuListLeft) and returns session metadata (userId, runningSejong, loginDt) per research.md R2
-- [ ] T009 Implement page initialization helper in `src/session.ts`: initPage() function that calls initUserInfo + initUserRole with pgmKey and returns addParam string. Include addParam encoding (base64(encodeURIComponent(JSON))) per research.md R4
-- [ ] T010 Implement SejongClient class skeleton in `src/client.ts`: constructor, login() method (stores credentials), getGrades/getEnrollments/getScholarships method stubs that throw SessionExpiredError if not logged in
+- [x] T005 [P] Define Semester enum and all data types (Grade, CreditSummary, GradeReport, Enrollment, EnrollmentReport, Scholarship, ScholarshipReport) in `src/types.ts` per data-model.md
+- [x] T006 [P] Implement custom error classes (SejongAuthError, LoginFailedError, SessionExpiredError, NetworkError, PortalError, ParseError) in `src/errors.ts`
+- [x] T007 Implement SSO login flow in `src/session.ts`: createSession() function that performs GET loginSSL.jsp → POST login_action.jsp → extract result code → follow JS redirect → return cookie jar. Include User-Agent/Referer headers, TLS bypass via https.Agent, login result code parsing (OK/erridpwd/pwdNeedChg) per research.md R1
+- [x] T008 Implement WebSquare session initialization in `src/session.ts`: initWebSquare() function that performs the 7-step init sequence (initUserInfo → doListUserMyMenuList → getRunTimeSystem → doCoMessageList → doListUserMenuListTop → doNoticeCheck → doListUserMenuListLeft) and returns session metadata (userId, runningSejong, loginDt) per research.md R2
+- [x] T009 Implement page initialization helper in `src/session.ts`: initPage() function that calls initUserInfo + initUserRole with pgmKey and returns addParam string. Include addParam encoding (base64(encodeURIComponent(JSON))) per research.md R4
+- [x] T010 Implement SejongClient class skeleton in `src/client.ts`: constructor, login() method (stores credentials), getGrades/getEnrollments/getScholarships method stubs that throw SessionExpiredError if not logged in
 
 **Checkpoint**: `SejongClient.login()` stores credentials, session.ts functions compile, error classes importable
 
@@ -52,10 +52,10 @@
 
 ### Implementation
 
-- [ ] T011 [US1] Implement grade API call in `src/api/grades.ts`: fetchGrades() function that calls SchStudentBaseInfo/doStudent.do (학생정보) and SugRecordQ/doList.do (성적목록) with correct request bodies and addParam per research.md R3
-- [ ] T012 [US1] Implement grade response parser in `src/api/grades.ts`: parseGradeResponse() that maps portal JSON keys (dl_main, dl_summary, CURI_NO, CURI_NM, GRADE, MRKS, AVG_MRKS, etc.) to GradeReport type per data-model.md field mappings
-- [ ] T013 [US1] Wire getGrades() in `src/client.ts`: create independent HTTP session → SSO login → WebSquare init → page init (pgmKey: SELF_STUDSELF_SUB_30SCH_SUG05_STUDSugRecordQ) → call fetchGrades → return GradeReport
-- [ ] T014 [US1] Add grade exports to `src/index.ts`: export SejongClient, all types, all errors
+- [x] T011 [US1] Implement grade API call in `src/api/grades.ts`: fetchGrades() function that calls SchStudentBaseInfo/doStudent.do (학생정보) and SugRecordQ/doList.do (성적목록) with correct request bodies and addParam per research.md R3
+- [x] T012 [US1] Implement grade response parser in `src/api/grades.ts`: parseGradeResponse() that maps portal JSON keys (dl_main, dl_summary, CURI_NO, CURI_NM, GRADE, MRKS, AVG_MRKS, etc.) to GradeReport type per data-model.md field mappings
+- [x] T013 [US1] Wire getGrades() in `src/client.ts`: create independent HTTP session → SSO login → WebSquare init → page init (pgmKey: SELF_STUDSELF_SUB_30SCH_SUG05_STUDSugRecordQ) → call fetchGrades → return GradeReport
+- [x] T014 [US1] Add grade exports to `src/index.ts`: export SejongClient, all types, all errors
 
 **Checkpoint**: `client.getGrades()` returns real GradeReport with 15+ courses and GPA
 
@@ -69,9 +69,9 @@
 
 ### Implementation
 
-- [ ] T015 [US2] Implement enrollment API call in `src/api/enrollments.ts`: fetchEnrollments() that calls SueReqLesnQ/doYearsmt.do (학기목록) and SueReqLesnQ/doList.do (수강목록) with year/semesterCode parameters
-- [ ] T016 [US2] Implement enrollment response parser in `src/api/enrollments.ts`: parseEnrollmentResponse() mapping dl_yearSmt and dl_main to EnrollmentReport
-- [ ] T017 [US2] Wire getEnrollments(year?, semesterCode?) in `src/client.ts`: independent session → login → init → page init (pgmKey: SELF_STUDSELF_SUB_30SELF_MENU_10SueReqLesnQ) → fetchEnrollments → return EnrollmentReport
+- [x] T015 [US2] Implement enrollment API call in `src/api/enrollments.ts`: fetchEnrollments() that calls SueReqLesnQ/doYearsmt.do (학기목록) and SueReqLesnQ/doList.do (수강목록) with year/semesterCode parameters
+- [x] T016 [US2] Implement enrollment response parser in `src/api/enrollments.ts`: parseEnrollmentResponse() mapping dl_yearSmt and dl_main to EnrollmentReport
+- [x] T017 [US2] Wire getEnrollments(year?, semesterCode?) in `src/client.ts`: independent session → login → init → page init (pgmKey: SELF_STUDSELF_SUB_30SELF_MENU_10SueReqLesnQ) → fetchEnrollments → return EnrollmentReport
 
 **Checkpoint**: `client.getEnrollments()` returns current semester courses
 
@@ -85,9 +85,9 @@
 
 ### Implementation
 
-- [ ] T018 [US3] Implement scholarship API call in `src/api/scholarships.ts`: fetchScholarships() that calls SubSchoMasterOneQ/doList.do
-- [ ] T019 [US3] Implement scholarship response parser in `src/api/scholarships.ts`: parseScholarshipResponse() mapping dl_mainList to ScholarshipReport (handle null SCHO_CD_NM gracefully)
-- [ ] T020 [US3] Wire getScholarships() in `src/client.ts`: independent session → login → init → page init (pgmKey: SELF_STUDSELF_SUB_40SCH_SUB_STUDSubSchoMasterOneQ) → fetchScholarships → return ScholarshipReport
+- [x] T018 [US3] Implement scholarship API call in `src/api/scholarships.ts`: fetchScholarships() that calls SubSchoMasterOneQ/doList.do
+- [x] T019 [US3] Implement scholarship response parser in `src/api/scholarships.ts`: parseScholarshipResponse() mapping dl_mainList to ScholarshipReport (handle null SCHO_CD_NM gracefully)
+- [x] T020 [US3] Wire getScholarships() in `src/client.ts`: independent session → login → init → page init (pgmKey: SELF_STUDSELF_SUB_40SCH_SUB_STUDSubSchoMasterOneQ) → fetchScholarships → return ScholarshipReport
 
 **Checkpoint**: `client.getScholarships()` returns scholarship list with amounts
 
@@ -101,9 +101,9 @@
 
 ### Implementation
 
-- [ ] T021 [P] [US4] Implement Express app setup in `src/server/app.ts`: create Express app with JSON body parser, CORS, error handler middleware
-- [ ] T022 [US4] Implement REST routes in `src/server/routes.ts`: POST /api/v1/grades, POST /api/v1/enrollments, POST /api/v1/scholarships per contracts/rest-api.md — each route creates SejongClient, calls login+getXxx, returns JSON or appropriate error status (401/500/502)
-- [ ] T023 [US4] Add server entry point in `src/server/app.ts`: listen on configurable port (default 3000), add `bin` field to package.json for `npx sejong-auth-server`
+- [x] T021 [P] [US4] Implement Express app setup in `src/server/app.ts`: create Express app with JSON body parser, CORS, error handler middleware
+- [x] T022 [US4] Implement REST routes in `src/server/routes.ts`: POST /api/v1/grades, POST /api/v1/enrollments, POST /api/v1/scholarships per contracts/rest-api.md — each route creates SejongClient, calls login+getXxx, returns JSON or appropriate error status (401/500/502)
+- [x] T023 [US4] Add server entry point in `src/server/app.ts`: listen on configurable port (default 3000), add `bin` field to package.json for `npx sejong-auth-server`
 
 **Checkpoint**: `curl` to all 3 endpoints returns valid JSON responses
 
@@ -113,10 +113,10 @@
 
 **Purpose**: Final integration, validation, documentation
 
-- [ ] T024 [P] Create integration test in `tests/integration/client.test.ts`: test all 3 features sequentially with real portal credentials (skip if SEJONG_USERNAME not set)
-- [ ] T025 [P] Update README.md with TypeScript examples, API docs, development instructions per quickstart.md
-- [ ] T026 Configure package.json for npm publish: main/types/exports fields, files whitelist, bin entry
-- [ ] T027 Run full validation: `npm run build` succeeds, integration test passes, REST server responds correctly
+- [x] T024 [P] Create integration test in `tests/integration/client.test.ts`: test all 3 features sequentially with real portal credentials (skip if SEJONG_USERNAME not set)
+- [x] T025 [P] Update README.md with TypeScript examples, API docs, development instructions per quickstart.md
+- [x] T026 Configure package.json for npm publish: main/types/exports fields, files whitelist, bin entry
+- [x] T027 Run full validation: `npm run build` succeeds, integration test passes, REST server responds correctly
 
 ---
 
