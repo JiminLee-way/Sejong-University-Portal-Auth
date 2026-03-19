@@ -122,19 +122,35 @@ export async function fetchSeatMap(
     });
     const html = typeof resp.data === "string" ? resp.data : "";
 
-    // Extract occupied seat IDs from the script that adds "_over" class
+    // The script lists ONLY occupied seats with getElementById + _over pattern.
+    // Each occupied seat has a block like:
+    //   if(document.getElementById('N')){ var clsName = ...; ...setAttribute("class",clsName+"_over"); }
+    // Extract seat IDs from these blocks — they are ALL occupied.
     const occupiedIds = new Set<number>();
-    const overPattern = /getElementById\('(\d+)'\)[\s\S]*?_over/g;
+    const blockPattern = /if\s*\(\s*document\.getElementById\('(\d+)'\)\)/g;
     let match;
-    while ((match = overPattern.exec(html)) !== null) {
+    while ((match = blockPattern.exec(html)) !== null) {
       occupiedIds.add(parseInt(match[1], 10));
     }
 
-    // Extract all seat IDs from getElementById calls
+    // Total seats come from the room list data (passed via roomList).
+    // For the seat map, we generate seat numbers 1..N based on the iframe table structure.
+    // Use cheerio to find all numbered cells in the seat table.
+    const $map = cheerio.load(html);
     const allIds = new Set<number>();
-    const idPattern = /getElementById\('(\d+)'\)/g;
-    while ((match = idPattern.exec(html)) !== null) {
-      allIds.add(parseInt(match[1], 10));
+    $map("td, div").each((_, el) => {
+      const text = $map(el).text().trim();
+      const id = $map(el).attr("id");
+      if (id && /^\d+$/.test(id)) {
+        allIds.add(parseInt(id, 10));
+      } else if (/^\d+$/.test(text) && parseInt(text, 10) > 0 && parseInt(text, 10) < 500) {
+        allIds.add(parseInt(text, 10));
+      }
+    });
+
+    // If cheerio didn't find seat elements, use the occupied list as the full list
+    if (allIds.size === 0) {
+      occupiedIds.forEach((id) => allIds.add(id));
     }
 
     const seats: SeatStatus[] = Array.from(allIds)
