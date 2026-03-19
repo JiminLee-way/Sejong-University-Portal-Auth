@@ -7,6 +7,7 @@ import * as schedules from "./api/schedules.js";
 import * as qna from "./api/qna.js";
 import * as staff from "./api/staff.js";
 import * as notifs from "./api/notifications.js";
+import { generateQr, type QrCodeResult } from "./api/qr.js";
 import {
   acquireLibseatToken,
   fetchRoomList,
@@ -90,6 +91,21 @@ export class SejongClient {
       this.userId = "";
       this.username = "";
     }
+  }
+
+  // ── Student QR Code ──
+
+  /** 모바일 학생증 QR 코드 생성 (59초마다 갱신 필요) */
+  async generateStudentQr(refreshKey = 0, size = 200): Promise<QrCodeResult> {
+    this.requireAuth();
+    const data = JSON.stringify({
+      userId: this.userId,
+      name: this.username,
+      role: "STUDENT",
+      timestamp: Date.now(),
+      refreshKey,
+    });
+    return generateQr(this.accessToken, data, size);
   }
 
   // ── Grades ──

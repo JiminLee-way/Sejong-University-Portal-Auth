@@ -39,6 +39,8 @@ export type {
   SeatActionResult,
 } from "./types.js";
 
+export type { QrCodeResult } from "./api/qr.js";
+
 export {
   SejongAuthError,
   LoginFailedError,
