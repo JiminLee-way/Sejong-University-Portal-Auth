@@ -8,6 +8,7 @@ import * as qna from "./api/qna.js";
 import * as staff from "./api/staff.js";
 import * as notifs from "./api/notifications.js";
 import { generateQr, type QrCodeResult } from "./api/qr.js";
+import { getProfilePhoto } from "./api/photo.js";
 import * as timetable from "./api/timetable.js";
 import type { AvailableSemester, TimetableResponse, EnrolledCoursesResponse } from "./api/timetable.js";
 import {
@@ -98,6 +99,14 @@ export class SejongClient {
       this.userId = "";
       this.username = "";
     }
+  }
+
+  // ── Profile Photo ──
+
+  /** 증명사진 (JPEG Buffer) */
+  async getProfilePhoto(): Promise<Buffer> {
+    this.requireAuth();
+    return getProfilePhoto(this.accessToken);
   }
 
   // ── Student QR Code ──
