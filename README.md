@@ -7,6 +7,7 @@
 ## Features
 
 - **JWT 인증** — 로그인, 로그아웃, 토큰 갱신, 프로필 조회
+- **증명사진** — 학생 증명사진 JPEG 다운로드
 - **모바일 학생증 QR** — 공식 앱과 동일한 동적 QR 코드 생성 (59초 갱신)
 - **시간표 조회** — 요일/교시별 시간표 + 수강 과목 + 학점 요약
 - **성적 조회** — 전체/당학기/학기별 성적 + GPA
@@ -17,7 +18,8 @@
 - **1:1 문의** — CRUD + 카테고리
 - **교직원 검색** — 이름, 학과, 연락처
 - **알림** — 수신함, 읽음 처리, 설정
-- **도서관 좌석** — 열람실 현황, 좌석 배치도, 예약/연장/반납
+- **도서관 좌석** — 열람실 현황, 물리 배치도, 예약/발권/연장/반납
+- **스터디룸** — 예약/취소
 - **Pure JSON** — HTML 파싱 없음, 모든 응답이 구조화된 JSON
 
 ## Quick Start
@@ -35,6 +37,10 @@ await client.login('학번', '비밀번호');
 // 성적 조회
 const grades = await client.getGrades();
 console.log(`GPA: ${grades.overallSummary.avgMrks}`);
+
+// 증명사진
+const photo = await client.getProfilePhoto();
+fs.writeFileSync('photo.jpg', photo);
 
 // 모바일 학생증 QR 코드
 const qr = await client.generateStudentQr();
@@ -65,6 +71,7 @@ const notices = await client.getNotices('academic', { page: 0, size: 5 });
 | `getProfile()` | O | 내 정보 (이름, 학과, 학년, 카드번호) |
 | `refreshToken()` | O | 토큰 갱신 |
 | `logout()` | O | 로그아웃 |
+| `getProfilePhoto()` | O | 증명사진 (JPEG Buffer) |
 | `generateStudentQr(refreshKey?, size?)` | O | 모바일 학생증 QR 코드 생성 |
 | `getAvailableSemesters()` | O | 조회 가능한 학기 목록 |
 | `getTimetable(year, smtCd)` | O | 시간표 (요일/교시별) |
@@ -92,7 +99,8 @@ const notices = await client.getNotices('academic', { page: 0, size: 5 });
 | `getNotificationSettings()` | O | 알림 설정 |
 | `getLibraryRooms()` | O | 열람실 좌석 현황 |
 | `getMySeat()` | O | 나의 좌석 |
-| `getSeatMap(roomNo)` | O | 좌석 배치도 |
+| `getSeatMap(roomNo)` | O | 좌석 배치도 (간단) |
+| `getSeatLayout(roomNo)` | O | 좌석 물리 배치도 (실제 배치 그리드) |
 | `getFacilityRooms(type)` | O | 시설 현황 (studyroom/cinema/slounge) |
 | `reserveSeat(roomNo, seatNo)` | O | 좌석 예약 |
 | `confirmSeat(roomNo, seatNo)` | O | 좌석 발권확정 (게이트 통과 후) |
@@ -127,6 +135,14 @@ const notices = await client.getNotices('academic', { page: 0, size: 5 });
   "cardNo": "202312340",
   "birthDate": "20040101"
 }
+```
+
+### 증명사진 (`getProfilePhoto`)
+
+```typescript
+const photo = await client.getProfilePhoto();
+// photo: Buffer (JPEG, ~12KB)
+fs.writeFileSync('photo.jpg', photo);
 ```
 
 ### 모바일 학생증 QR (`generateStudentQr`)
@@ -293,6 +309,24 @@ setInterval(async () => {
 }
 ```
 
+### 좌석 물리 배치도 (`getSeatLayout`)
+
+```typescript
+const layout = await client.getSeatLayout(13); // 제2열람실
+// {
+//   roomNo: 13, roomName: "제2열람실", totalSeats: 111,
+//   occupiedSeats: [4, 29, 40, 84],
+//   blocks: [{
+//     rows: [
+//       [{ type:"seat", seatId:12, status:"available" }, { type:"empty" }, { type:"seat", seatId:13, status:"available" }, ...],
+//       [{ type:"seat", seatId:11, status:"available" }, { type:"empty" }, { type:"seat", seatId:14, status:"available" }, ...],
+//     ]
+//   }, ...]   // 6 blocks — 실제 열람실 배치와 1:1 대응
+// }
+```
+
+> 각 블록의 행/열이 실제 열람실의 책상 배치와 동일합니다. `seat`=좌석, `empty`=통로, `label`=표시.
+
 ### 스터디룸 예약 (`reserveStudyRoom`)
 
 ```typescript
@@ -384,6 +418,7 @@ src/
 ├── errors.ts             # 에러 클래스
 ├── api/
 │   ├── auth.ts           # 인증
+│   ├── photo.ts          # 증명사진
 │   ├── qr.ts             # 학생증 QR 코드
 │   ├── timetable.ts      # 시간표 + 수강 과목
 │   ├── grades.ts         # 성적
