@@ -8,6 +8,8 @@ import * as qna from "./api/qna.js";
 import * as staff from "./api/staff.js";
 import * as notifs from "./api/notifications.js";
 import { generateQr, type QrCodeResult } from "./api/qr.js";
+import * as timetable from "./api/timetable.js";
+import type { AvailableSemester, TimetableResponse, EnrolledCoursesResponse } from "./api/timetable.js";
 import {
   acquireLibseatToken,
   fetchRoomList,
@@ -106,6 +108,26 @@ export class SejongClient {
       refreshKey,
     });
     return generateQr(this.accessToken, data, size);
+  }
+
+  // ── Timetable ──
+
+  /** 조회 가능한 학기 목록 */
+  async getAvailableSemesters(): Promise<AvailableSemester[]> {
+    this.requireAuth();
+    return timetable.getAvailableSemesters(this.accessToken);
+  }
+
+  /** 시간표 조회 (요일/교시별) */
+  async getTimetable(year: string, smtCd: string): Promise<TimetableResponse> {
+    this.requireAuth();
+    return timetable.getTimetable(this.accessToken, year, smtCd);
+  }
+
+  /** 수강 과목 목록 + 학점 요약 */
+  async getEnrolledCourses(year: string, smtCd: string): Promise<EnrolledCoursesResponse> {
+    this.requireAuth();
+    return timetable.getEnrolledCourses(this.accessToken, year, smtCd);
   }
 
   // ── Grades ──

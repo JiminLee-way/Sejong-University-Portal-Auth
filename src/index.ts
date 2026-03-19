@@ -41,6 +41,15 @@ export type {
 
 export type { QrCodeResult } from "./api/qr.js";
 
+export type {
+  AvailableSemester,
+  TimetableSlot,
+  TimetableResponse,
+  EnrolledCourse,
+  EnrolledCoursesResponse,
+  CreditSummary,
+} from "./api/timetable.js";
+
 export {
   SejongAuthError,
   LoginFailedError,
