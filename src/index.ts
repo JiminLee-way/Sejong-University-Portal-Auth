@@ -37,6 +37,9 @@ export type {
   FacilityRoom,
   FacilityType,
   SeatActionResult,
+  SeatLayoutCell,
+  SeatLayoutBlock,
+  SeatLayoutResponse,
 } from "./types.js";
 
 export type { QrCodeResult } from "./api/qr.js";

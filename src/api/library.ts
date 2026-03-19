@@ -170,6 +170,77 @@ export async function fetchSeatMap(
   }
 }
 
+/** Fetch seat layout — physical grid matching the actual room layout */
+export async function fetchSeatLayout(
+  http: AxiosInstance,
+  token: string,
+  roomNo: number,
+): Promise<import("../types.js").SeatLayoutResponse> {
+  try {
+    const resp = await http.get(`${LIBSEAT_BASE}/seatMap.php`, {
+      params: { param_room_no: roomNo, token },
+    });
+    const html = typeof resp.data === "string" ? resp.data : "";
+
+    // Occupied seats from JS
+    const occupiedIds = new Set<number>();
+    const blockPattern = /getElementById\('(\d+)'\)/g;
+    let m;
+    while ((m = blockPattern.exec(html)) !== null) {
+      occupiedIds.add(parseInt(m[1], 10));
+    }
+
+    // Parse tables into layout blocks
+    const $ = cheerio.load(html);
+    const blocks: import("../types.js").SeatLayoutBlock[] = [];
+    let totalSeats = 0;
+
+    $("table").each((_, tableEl) => {
+      const tableHtml = $(tableEl).html() || "";
+      // Only process tables containing seat numbers
+      if (!/>\d+</.test(tableHtml)) return;
+
+      const rows: import("../types.js").SeatLayoutCell[][] = [];
+      $(tableEl).find("tr").each((_, tr) => {
+        const row: import("../types.js").SeatLayoutCell[] = [];
+        let hasSeat = false;
+        $(tr).find("td").each((_, td) => {
+          const text = $(td).text().trim();
+          if (/^\d+$/.test(text)) {
+            const seatId = parseInt(text, 10);
+            totalSeats++;
+            hasSeat = true;
+            row.push({
+              type: "seat",
+              seatId,
+              status: occupiedIds.has(seatId) ? "occupied" : "available",
+            });
+          } else if (text) {
+            row.push({ type: "label", text });
+          } else {
+            row.push({ type: "empty" });
+          }
+        });
+        if (row.length > 0 && hasSeat) rows.push(row);
+      });
+
+      if (rows.length > 0) blocks.push({ rows });
+    });
+
+    const roomName = $("h4, h5, .room-name").first().text().trim() || `열람실 ${roomNo}`;
+
+    return {
+      roomNo,
+      roomName,
+      totalSeats,
+      occupiedSeats: [...occupiedIds].sort((a, b) => a - b),
+      blocks,
+    };
+  } catch (e) {
+    throw new ParseError(`Failed to parse seat layout: ${e}`);
+  }
+}
+
 /** Fetch facility rooms (study rooms, cinema rooms, S-Lounge) */
 export async function fetchFacilityRooms(
   http: AxiosInstance,

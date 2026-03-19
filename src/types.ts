@@ -319,3 +319,22 @@ export interface SeatActionResult {
   seatNumber?: number;
   message: string;
 }
+
+// ── Seat Layout (physical) ──
+
+export type SeatLayoutCell =
+  | { type: "seat"; seatId: number; status: SeatStatusType }
+  | { type: "empty" }
+  | { type: "label"; text: string };
+
+export interface SeatLayoutBlock {
+  rows: SeatLayoutCell[][];
+}
+
+export interface SeatLayoutResponse {
+  roomNo: number;
+  roomName: string;
+  totalSeats: number;
+  occupiedSeats: number[];
+  blocks: SeatLayoutBlock[];
+}
