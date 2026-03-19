@@ -93,9 +93,14 @@ const notices = await client.getNotices('academic', { page: 0, size: 5 });
 | `getLibraryRooms()` | O | 열람실 좌석 현황 |
 | `getMySeat()` | O | 나의 좌석 |
 | `getSeatMap(roomNo)` | O | 좌석 배치도 |
+| `getFacilityRooms(type)` | O | 시설 현황 (studyroom/cinema/slounge) |
 | `reserveSeat(roomNo, seatNo)` | O | 좌석 예약 |
+| `confirmSeat(roomNo, seatNo)` | O | 좌석 발권확정 (게이트 통과 후) |
 | `extendSeat()` | O | 좌석 연장 |
 | `returnSeat()` | O | 좌석 반납 |
+| `getStudyRoomReservation()` | O | 스터디룸 예약 가능 목록 |
+| `reserveStudyRoom(roomNo, date, start, end)` | O | 스터디룸 예약 |
+| `cancelStudyRoom(reserveNo)` | O | 스터디룸 예약 취소 |
 
 **Auth 컬럼**: `O` = 로그인 필요, `-` = 로그인 불필요 (공개 API)
 
@@ -288,6 +293,16 @@ setInterval(async () => {
 }
 ```
 
+### 스터디룸 예약 (`reserveStudyRoom`)
+
+```typescript
+// 스터디룸 예약 (roomNo, 날짜, 시작시간, 종료시간)
+await client.reserveStudyRoom(1, '2026-04-01', 10, 12);
+
+// 스터디룸 예약 취소
+await client.cancelStudyRoom('12345');
+```
+
 ---
 
 ## Error Handling
@@ -385,6 +400,16 @@ src/
     ├── app.ts            # Express 서버
     └── routes.ts         # REST API 라우트
 ```
+
+## Known Issues
+
+- **수강 학점 합산 오류**: `getEnrolledCourses()`의 `creditSummary.totalCredits`가 전공 학점만 합산하고 균필/교양 학점을 누락하는 서버 버그가 있습니다. 정확한 학점은 `courses`를 직접 합산하세요:
+  ```typescript
+  const enrolled = await client.getEnrolledCourses('2026', '10');
+  const realCredits = enrolled.courses.reduce((sum, c) => sum + c.credits, 0);
+  ```
+- **좌석 예약/발권확정**: 도서관 게이트 통과 후(도서관 내부)에서만 가능합니다
+- **좌석 연장**: 도서관 내부 Wi-Fi/비콘 검증이 필요하여 외부에서 호출 시 실패합니다
 
 ## Development
 
