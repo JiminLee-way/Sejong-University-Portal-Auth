@@ -22,8 +22,9 @@
 - **기숙사 식단** — 주간 식단표 조식/중식/석식 (인증 불필요)
 - **장학금** — 학기별 장학금 내역 (이름, 등록금감면, 총액)
 - **등록금** — 고지서 + 납부 내역 (금액, 납부일, 가상계좌)
-- **도서관 좌석** — 열람실 현황, 물리 배치도, 좌석 좌표, 예약/발권/연장/반납
-- **스터디룸** — 예약/취소
+- **도서관 좌석** — 열람실 현황, 물리 배치도, 좌석 px 좌표, 예약/발권/연장/반납
+- **스터디룸/시네마룸/S-Lounge** — 그룹 목록, 시간대별 예약 현황, 예약/취소
+- **예약 내역** — 열람실/스터디룸/시네마룸/S-Lounge 전체 이용 내역
 - **Pure JSON** — HTML 파싱 없음, 모든 응답이 구조화된 JSON
 
 ## Quick Start
@@ -125,6 +126,9 @@ const notices = await client.getNotices('academic', { page: 0, size: 5 });
 | `getSeatMap(roomNo)` | O | 좌석 배치도 (간단) |
 | `getSeatLayout(roomNo)` | O | 좌석 물리 배치도 (실제 배치 그리드) |
 | `getFacilityRooms(type)` | O | 시설 현황 (studyroom/cinema/slounge) |
+| `getFacilityGroups(type)` | O | 시설 그룹 목록 (이름, 정원, roomGB) |
+| `getFacilitySchedule(type, roomGB, seq)` | O | 시간대별 예약 가능 여부 |
+| `getMyReservations()` | O | 전체 예약 현황 + 이용 내역 |
 | `reserveSeat(roomNo, seatNo)` | O | 좌석 예약 |
 | `confirmSeat(roomNo, seatNo)` | O | 좌석 발권확정 (게이트 통과 후) |
 | `extendSeat()` | O | 좌석 연장 |
@@ -458,6 +462,64 @@ const layout = await client.getSeatLayout(15); // 제4열람실A
 | 16 | 제4열람실B | 146 |
 | 17 | 제5열람실 | 95 |
 | 18 | 제6열람실 | 165 |
+
+### 시설 그룹 + 시간대 조회 (`getFacilityGroups`, `getFacilitySchedule`)
+
+```typescript
+// 스터디룸 그룹 목록
+const groups = await client.getFacilityGroups('studyroom');
+// → [
+//   { name: "스터디룸 12인실 01스터디룸", capacity: "12인", roomGB: "S1", seq: 0 },
+//   { name: "스터디룸 6인실 02~04스터디룸", capacity: "6인", roomGB: "S1", seq: 0 },
+// ]
+
+// 시네마룸, S-Lounge도 동일
+const cinema = await client.getFacilityGroups('cinema');   // roomGB: S2
+const lounge = await client.getFacilityGroups('lounge');   // roomGB: S3
+
+// 시간대별 예약 가능 여부
+const schedule = await client.getFacilitySchedule('studyroom', 'S1', 0);
+// → { roomGB: "S1", seq: 0, timeSlots: [
+//   { time: "09:00", available: true },
+//   { time: "10:00", available: true },
+//   { time: "14:00", available: false },  ← 예약됨
+//   ...14 slots (09:00~22:00)
+// ]}
+```
+
+### 전체 예약 현황 + 이용 내역 (`getMyReservations`)
+
+```typescript
+const res = await client.getMyReservations();
+```
+
+```json
+{
+  "seat": {
+    "roomName": "제4열람실A",
+    "seatNumber": "42",
+    "usageTime": "14:00~22:00",
+    "extensionCount": 1,
+    "isAssigned": true
+  },
+  "facility": {
+    "roomName": "스터디룸 01",
+    "usageTime": "10:00~12:00",
+    "status": "사용중",
+    "hasFacility": true
+  },
+  "history": {
+    "readingRoom": [
+      { "date": "2025-11-04", "time": "17:06~23:06", "roomName": "제4열람실A", "status": "미반납" },
+      { "date": "2025-09-30", "time": "22:30~04:30", "roomName": "제4열람실B", "status": "사용완료" }
+    ],
+    "studyRoom": [],
+    "cinema": [],
+    "lounge": []
+  },
+  "penalty": ""
+}
+```
 
 ### 스터디룸 예약 (`reserveStudyRoom`)
 
