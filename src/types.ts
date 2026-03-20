@@ -334,6 +334,59 @@ export type SeatLayoutCell =
   | { type: "gap"; width: number; colspan?: number; rowspan?: number }
   | { type: "empty"; colspan?: number; rowspan?: number };
 
+// ── Facility (studyroom / cinema / lounge) ──
+
+export interface FacilityGroup {
+  type: "studyroom" | "cinema" | "lounge";
+  name: string;
+  capacity: string;
+  roomGB: string;
+  seq: number;
+}
+
+export interface FacilityTimeSlot {
+  time: string;
+  available: boolean;
+}
+
+export interface FacilitySchedule {
+  roomGB: string;
+  seq: number;
+  timeSlots: FacilityTimeSlot[];
+}
+
+// ── Reservation History ──
+
+export interface ReservationRecord {
+  date: string;
+  time: string;
+  roomName: string;
+  status: string;
+}
+
+export interface MyReservations {
+  seat: {
+    roomName: string;
+    seatNumber: string;
+    usageTime: string;
+    extensionCount: number;
+    isAssigned: boolean;
+  };
+  facility: {
+    roomName: string;
+    usageTime: string;
+    status: string;
+    hasFacility: boolean;
+  };
+  history: {
+    readingRoom: ReservationRecord[];
+    studyRoom: ReservationRecord[];
+    cinema: ReservationRecord[];
+    lounge: ReservationRecord[];
+  };
+  penalty: string;
+}
+
 export interface SeatLayoutRow {
   cells: SeatLayoutCell[];
   gapAfter?: number;

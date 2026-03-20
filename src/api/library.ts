@@ -510,3 +510,162 @@ export async function fetchStudyRoomReservation(
     throw new ParseError(`Failed to parse study room reservation: ${e}`);
   }
 }
+
+/** Fetch facility groups (studyroom, cinema, lounge) with roomGB/seq params */
+export async function fetchFacilityGroups(
+  http: AxiosInstance,
+  token: string,
+  type: "studyroom" | "cinema" | "lounge",
+): Promise<import("../types.js").FacilityGroup[]> {
+  const pages: Record<string, string> = {
+    studyroom: "sroomList.php",
+    cinema: "cinemaList.php",
+    lounge: "loungeList.php",
+  };
+  const mapPages: Record<string, string> = {
+    studyroom: "sroomMap",
+    cinema: "cinemaMap",
+    lounge: "loungeMap",
+  };
+
+  try {
+    const resp = await http.get(`${LIBSEAT_BASE}/${pages[type]}`, { params: { token } });
+    const $ = cheerio.load(resp.data);
+    const groups: import("../types.js").FacilityGroup[] = [];
+
+    $(`a[href*='${mapPages[type]}']`).each((_, el) => {
+      const href = $(el).attr("href") || "";
+      const text = $(el).text().trim().replace(/\s+/g, " ");
+      const roomGB = href.match(/roomGB=(\w+)/)?.[1] || "";
+      const seq = parseInt(href.match(/seq=(\d+)/)?.[1] || "0", 10);
+      const capacityMatch = text.match(/(\d+)인/);
+
+      if (text && roomGB) {
+        groups.push({
+          type,
+          name: text,
+          capacity: capacityMatch?.[1] ? `${capacityMatch[1]}인` : "",
+          roomGB,
+          seq,
+        });
+      }
+    });
+
+    return groups;
+  } catch (e) {
+    throw new ParseError(`Failed to parse facility groups: ${e}`);
+  }
+}
+
+/** Fetch facility schedule (time slots with availability) */
+export async function fetchFacilitySchedule(
+  http: AxiosInstance,
+  token: string,
+  type: "studyroom" | "cinema" | "lounge",
+  roomGB: string,
+  seq: number,
+): Promise<import("../types.js").FacilitySchedule> {
+  const pages: Record<string, string> = {
+    studyroom: "sroomMap.php",
+    cinema: "cinemaMap.php",
+    lounge: "loungeMap.php",
+  };
+
+  try {
+    const resp = await http.get(`${LIBSEAT_BASE}/${pages[type]}`, {
+      params: { token, roomGB, seq },
+    });
+    const $ = cheerio.load(resp.data);
+    const timeSlots: import("../types.js").FacilityTimeSlot[] = [];
+
+    $(".avl-time, td[class*='avl']").each((_, el) => {
+      const text = $(el).text().trim();
+      const timeMatch = text.match(/(\d{2}:\d{2})/);
+      if (timeMatch) {
+        const parent = $(el).closest(".avl-data-slot, td");
+        const isAvailable = parent.text().includes("예약가능") || parent.attr("class")?.includes("avl") || false;
+        timeSlots.push({
+          time: timeMatch[1],
+          available: isAvailable,
+        });
+      }
+    });
+
+    return { roomGB, seq, timeSlots };
+  } catch (e) {
+    throw new ParseError(`Failed to parse facility schedule: ${e}`);
+  }
+}
+
+/** Fetch all reservation data: current seat, facility, history (열람실/스터디룸/시네마/라운지) */
+export async function fetchMyReservations(
+  http: AxiosInstance,
+  token: string,
+): Promise<import("../types.js").MyReservations> {
+  try {
+    const resp = await http.get(`${LIBSEAT_BASE}/mySeat.php`, { params: { token } });
+    const $ = cheerio.load(resp.data);
+
+    // Current seat info
+    const slides = $(".slides, #slides").first();
+    const seatFields = slides.find("h6, p").map((_, el) => $(el).text().trim()).get();
+    const roomName = seatFields[1] || "";
+    const seatNumber = seatFields[3] || "";
+    const usageTime = seatFields[5] || "";
+    const extensionText = seatFields[7] || "0";
+    const extensionCount = parseInt(extensionText, 10) || 0;
+
+    // Current facility info
+    const facilityRoom = seatFields[9] || "";
+    const facilityTime = seatFields[11] || "";
+    const facilityStatus = seatFields[13] || "";
+
+    // Reservation history from tabs
+    const tabContents = $(".tab-content");
+    const parseHistory = (tabIndex: number): import("../types.js").ReservationRecord[] => {
+      const records: import("../types.js").ReservationRecord[] = [];
+      tabContents.eq(tabIndex).find(".item, div").each((_, el) => {
+        const text = $(el).text().trim().replace(/\s+/g, " ");
+        const match = text.match(/(\d{4}\.\d{2}\.\d{2})\s+(\d{2}:\d{2}~\d{2}:\d{2})\s+(.+?)\s+(사용완료|미반납|사용중|예약중|취소)/);
+        if (match) {
+          records.push({
+            date: match[1].replace(/\./g, "-"),
+            time: match[2],
+            roomName: match[3],
+            status: match[4],
+          });
+        }
+      });
+      return records;
+    };
+
+    // Penalty info
+    const penaltyText = $("*:contains('미반납 제재')").parent().text().trim();
+    const penalty = penaltyText.includes("없음") || !penaltyText ? "" : penaltyText.replace(/\s+/g, " ").substring(0, 100);
+
+    return {
+      seat: {
+        roomName,
+        seatNumber,
+        usageTime,
+        extensionCount,
+        isAssigned: !!(roomName && seatNumber),
+      },
+      facility: {
+        roomName: facilityRoom,
+        usageTime: facilityTime,
+        status: facilityStatus,
+        hasFacility: !!facilityRoom,
+      },
+      history: {
+        readingRoom: parseHistory(0),
+        studyRoom: parseHistory(1),
+        cinema: parseHistory(2),
+        lounge: parseHistory(3),
+      },
+      penalty,
+    };
+  } catch (e) {
+    throw new ParseError(`Failed to parse reservations: ${e}`);
+  }
+}

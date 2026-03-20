@@ -27,6 +27,9 @@ import {
   fetchSeatCoords,
   fetchFacilityRooms,
   fetchStudyRoomReservation,
+  fetchFacilityGroups,
+  fetchFacilitySchedule,
+  fetchMyReservations,
 } from "./api/library.js";
 import {
   setSeat as doSetSeat,
@@ -406,6 +409,24 @@ export class SejongClient {
   async getSeatCoords(roomNo: number): Promise<import("./types.js").SeatMapCoords> {
     const { http, token } = await this.ensureLibseat();
     return fetchSeatCoords(http, token, roomNo);
+  }
+
+  /** 시설 그룹 목록 (스터디룸/시네마/라운지) */
+  async getFacilityGroups(type: "studyroom" | "cinema" | "lounge"): Promise<import("./types.js").FacilityGroup[]> {
+    const { http, token } = await this.ensureLibseat();
+    return fetchFacilityGroups(http, token, type);
+  }
+
+  /** 시설 시간대별 예약 현황 */
+  async getFacilitySchedule(type: "studyroom" | "cinema" | "lounge", roomGB: string, seq: number): Promise<import("./types.js").FacilitySchedule> {
+    const { http, token } = await this.ensureLibseat();
+    return fetchFacilitySchedule(http, token, type, roomGB, seq);
+  }
+
+  /** 전체 예약 현황 (현재 좌석 + 시설 + 이용 내역 전체) */
+  async getMyReservations(): Promise<import("./types.js").MyReservations> {
+    const { http, token } = await this.ensureLibseat();
+    return fetchMyReservations(http, token);
   }
 
   /** 좌석 예약 (setSeat) */

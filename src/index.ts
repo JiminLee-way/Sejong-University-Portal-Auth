@@ -42,6 +42,11 @@ export type {
   SeatLayoutResponse,
   SeatCoord,
   SeatMapCoords,
+  FacilityGroup,
+  FacilityTimeSlot,
+  FacilitySchedule,
+  ReservationRecord,
+  MyReservations,
 } from "./types.js";
 
 export type { QrCodeResult } from "./api/qr.js";
