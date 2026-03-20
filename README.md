@@ -18,7 +18,11 @@
 - **1:1 문의** — CRUD + 카테고리
 - **교직원 검색** — 이름, 학과, 연락처
 - **알림** — 수신함, 읽음 처리, 설정
-- **도서관 좌석** — 열람실 현황, 물리 배치도, 예약/발권/연장/반납
+- **학식 메뉴** — 3개 건물(군자관/진관홀/학생회관) 식당 메뉴 + 가격 (인증 불필요)
+- **기숙사 식단** — 주간 식단표 조식/중식/석식 (인증 불필요)
+- **장학금** — 학기별 장학금 내역 (이름, 등록금감면, 총액)
+- **등록금** — 고지서 + 납부 내역 (금액, 납부일, 가상계좌)
+- **도서관 좌석** — 열람실 현황, 물리 배치도, 좌석 좌표, 예약/발권/연장/반납
 - **스터디룸** — 예약/취소
 - **Pure JSON** — HTML 파싱 없음, 모든 응답이 구조화된 JSON
 
@@ -55,6 +59,15 @@ tt.courses.forEach(c => console.log(`${c.curiNm} ${c.lesnTime} ${c.roomNmAlias}`
 const enrolled = await client.getEnrolledCourses('2026', '10');
 console.log(`${enrolled.creditSummary.totalCredits}학점 ${enrolled.creditSummary.totalCourses}과목`);
 
+// 학식 메뉴 (로그인 불필요)
+const buildings = await client.getFoodBuildings();
+const menus = await client.getFoodMenus(1); // 계절밥상
+menus.forEach(m => console.log(`${m.menuName} ${m.defaultPrice}원`));
+
+// 기숙사 주간 식단 (로그인 불필요)
+const dormMenu = await client.getDormWeeklyMenu();
+dormMenu.days.forEach(d => console.log(`${d.date} 중식: ${d.lunch}`));
+
 // 공지사항 (로그인 불필요)
 const notices = await client.getNotices('academic', { page: 0, size: 5 });
 ```
@@ -79,6 +92,16 @@ const notices = await client.getNotices('academic', { page: 0, size: 5 });
 | `getGrades()` | O | 전체 성적 |
 | `getCurrentGrades()` | O | 당학기 성적 |
 | `getSemesterGrades(year, smtCd)` | O | 특정 학기 성적 |
+| `getScholarshipOptions()` | O | 장학금 조회 가능 학기 |
+| `getScholarships(year, smtCd)` | O | 장학금 내역 |
+| `getTuitionNotice(year, smtCd)` | O | 등록금 고지서 |
+| `getTuitionPayment(year, smtCd)` | O | 등록금 납부 내역 |
+| `getFoodBuildings()` | - | 학식 건물 목록 |
+| `getFoodPlaces(buildingId)` | - | 건물별 식당 목록 |
+| `getFoodMenus(placeId)` | - | 식당 메뉴 + 가격 |
+| `getFoodMealTypes(placeId)` | - | 조식/중식/석식 유형 + 가격 |
+| `getDormWeeklyMenu(date?)` | - | 기숙사 주간 식단표 |
+| `getSeatCoords(roomNo)` | O | 좌석 px 좌표 + 배경 이미지 |
 | `getNotices(category, {page, size})` | - | 공지사항 목록 |
 | `getNoticeDetail(category, id)` | - | 공지사항 상세 |
 | `getLatestNotices(type, size)` | - | 최신 공지 |
@@ -134,6 +157,74 @@ const notices = await client.getNotices('academic', { page: 0, size: 5 });
   "studentYear": 2,
   "cardNo": "202312340",
   "birthDate": "20040101"
+}
+```
+
+### 기숙사 주간 식단 (`getDormWeeklyMenu`)
+
+```json
+{
+  "today": "2026-03-20",
+  "days": [
+    {
+      "date": "2026-03-16",
+      "breakfast": "아메리칸핫도그 제로콜라",
+      "lunch": "쌀밥 두부된장국 제육볶음 야채쌈*쌈장 청포묵흑임자무침 배추김치",
+      "dinner": "쌀밥 만두설렁탕 떡갈비구이 부추적채무침 양파장아찌 깍두기",
+      "alternative": "식권1장으로 간편식 교환(샌드위치, 음료 등 구비)"
+    },
+    {
+      "date": "2026-03-19",
+      "breakfast": "오징어까스*타르소스덮밥",
+      "lunch": "★특식(예약자만 이용가능)★ 김가루밥 콩나물국 매운돼지갈비찜 마카로니콘샐러드 수제딸기라떼 배추김치",
+      "dinner": "쌀밥 계란파국 돈민찌두부김치덮밥 치킨너겟*머스타드 얼갈이나물 깍두기",
+      "alternative": "식권1장으로 간편식 교환(샌드위치, 음료 등 구비)"
+    }
+  ]
+}
+```
+
+### 학식 메뉴 (`getFoodMenus`)
+
+```json
+[
+  { "menuName": "치킨까스", "defaultPrice": 4500 },
+  { "menuName": "생선 까스", "defaultPrice": 4000 },
+  { "menuName": "고구마돈까스", "defaultPrice": 5000 },
+  { "menuName": "라면", "defaultPrice": 3300 },
+  { "menuName": "치즈라면", "defaultPrice": 3700 }
+]
+```
+
+**학식 건물**: 군자관 6층(계절밥상 중식/석식 7,000원), 진관홀 B1(진관키친), 학생회관 B1(나루또/아지오/김밥천국)
+
+### 장학금 (`getScholarships`)
+
+```json
+{
+  "scholarships": [
+    { "scholarshipName": "육군군장학금(학업보조비)", "tuitionFee": 2463000, "totalAmount": 2463000 },
+    { "scholarshipName": "군장학생장학금(30)", "tuitionFee": 300000, "totalAmount": 300000 }
+  ]
+}
+```
+
+### 등록금 납부 (`getTuitionPayment`)
+
+```json
+{
+  "tuitions": [
+    {
+      "yearSmtInfo": "2026/1학기",
+      "deptNm": "컴퓨터공학과",
+      "rgstLessAmt": 2534000,
+      "totDemandAmt": 2534000,
+      "virtBankNo": "10989073822450"
+    }
+  ],
+  "paymentDetails": [
+    { "processDate": "2026-02-23", "category": "수납", "amount": 2534000 }
+  ]
 }
 ```
 
@@ -463,6 +554,10 @@ src/
 │   ├── qr.ts             # 학생증 QR 코드
 │   ├── timetable.ts      # 시간표 + 수강 과목
 │   ├── grades.ts         # 성적
+│   ├── scholarship.ts    # 장학금
+│   ├── tuition.ts        # 등록금
+│   ├── food.ts           # 학식 메뉴
+│   ├── dormitory.ts      # 기숙사 식단
 │   ├── notices.ts        # 공지사항
 │   ├── news.ts           # 세종뉴스
 │   ├── feeds.ts          # 소셜 피드
