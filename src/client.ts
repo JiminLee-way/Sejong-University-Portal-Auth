@@ -11,6 +11,7 @@ import { generateQr, type QrCodeResult } from "./api/qr.js";
 import { getProfilePhoto } from "./api/photo.js";
 import * as scholarship from "./api/scholarship.js";
 import * as food from "./api/food.js";
+import { getDormWeeklyMenu, type DormWeeklyMenu } from "./api/dormitory.js";
 import type { Building, Place, MenuItem, MealType } from "./api/food.js";
 import type { ScholarshipListResponse, ScholarshipItem } from "./api/scholarship.js";
 import * as tuition from "./api/tuition.js";
@@ -151,6 +152,13 @@ export class SejongClient {
   /** 식당별 식사 유형 (조식/중식/석식 + 가격) */
   async getFoodMealTypes(placeId: number): Promise<MealType[]> {
     return food.getMealTypes(placeId);
+  }
+
+  // ── Dormitory Meals (인증 불필요) ──
+
+  /** 기숙사 주간 식단표 */
+  async getDormWeeklyMenu(date?: string): Promise<DormWeeklyMenu> {
+    return getDormWeeklyMenu(date);
   }
 
   // ── Scholarship ──

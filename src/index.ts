@@ -46,6 +46,8 @@ export type {
 
 export type { QrCodeResult } from "./api/qr.js";
 
+export type { DormDayMenu, DormWeeklyMenu } from "./api/dormitory.js";
+
 export type {
   Building,
   Place,
