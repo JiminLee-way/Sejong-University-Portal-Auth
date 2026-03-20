@@ -311,21 +311,62 @@ setInterval(async () => {
 
 ### 좌석 물리 배치도 (`getSeatLayout`)
 
+실제 열람실 HTML 테이블 구조를 그대로 파싱하여 물리적 좌석 배치를 반환합니다.
+
 ```typescript
-const layout = await client.getSeatLayout(13); // 제2열람실
-// {
-//   roomNo: 13, roomName: "제2열람실", totalSeats: 111,
-//   occupiedSeats: [4, 29, 40, 84],
-//   blocks: [{
-//     rows: [
-//       [{ type:"seat", seatId:12, status:"available" }, { type:"empty" }, { type:"seat", seatId:13, status:"available" }, ...],
-//       [{ type:"seat", seatId:11, status:"available" }, { type:"empty" }, { type:"seat", seatId:14, status:"available" }, ...],
-//     ]
-//   }, ...]   // 6 blocks — 실제 열람실 배치와 1:1 대응
-// }
+const layout = await client.getSeatLayout(15); // 제4열람실A
 ```
 
-> 각 블록의 행/열이 실제 열람실의 책상 배치와 동일합니다. `seat`=좌석, `empty`=통로, `label`=표시.
+```json
+{
+  "roomNo": 15,
+  "roomName": "제4열람실A",
+  "totalSeats": 146,
+  "occupiedSeats": [1, 37, 75, 103, 107],
+  "blocks": [
+    {
+      "style": { "marginTop": 45, "marginLeft": 78 },
+      "rows": [
+        {
+          "cells": [
+            { "type": "seat", "seatId": 84, "status": "available" },
+            { "type": "gap", "width": 4 },
+            { "type": "seat", "seatId": 85, "status": "available" },
+            { "type": "gap", "width": 55 },
+            { "type": "seat", "seatId": 94, "status": "available" },
+            { "type": "gap", "width": 4 },
+            { "type": "seat", "seatId": 95, "status": "available" }
+          ]
+        },
+        {
+          "cells": ["..."],
+          "gapAfter": 54
+        }
+      ]
+    }
+  ]
+}
+```
+
+**셀 타입:**
+- `seat` — 좌석 (`seatId`, `status`: available/occupied, `orientation`: left/right/top/bottom)
+- `gap` — 통로 (`width`: px 간격)
+- `empty` — 빈 공간
+
+**블록:** `style.marginTop/marginLeft`로 열람실 내 절대 위치, `cellspacing`으로 셀 간격
+
+**전체 열람실 (8개, 959석):**
+
+| roomNo | 이름 | 좌석 수 |
+|--------|------|---------|
+| 11 | 제1열람실A | 87 |
+| 12 | 제1열람실B | 102 |
+| 13 | 제2열람실 | 111 |
+| 14 | 제3열람실 | 107 |
+| 15 | 제4열람실A | 146 |
+| 16 | 제4열람실B | 146 |
+| 17 | 제5열람실 | 95 |
+| 18 | 제6열람실 | 165 |
 
 ### 스터디룸 예약 (`reserveStudyRoom`)
 
