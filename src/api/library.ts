@@ -205,10 +205,19 @@ export async function fetchSeatLayout(
       const tableStyle = $(tableEl).attr("style") || "";
       const mtMatch = tableStyle.match(/margin-top:\s*(-?\d+)px/);
       const mlMatch = tableStyle.match(/margin-left:\s*(-?\d+)px/);
-      const style = {
+      const cellspacingAttr = $(tableEl).attr("cellspacing");
+      const cellpaddingAttr = $(tableEl).attr("cellpadding");
+      
+      const cellspacing = cellspacingAttr ? parseInt(cellspacingAttr, 10) : undefined;
+      const cellpadding = cellpaddingAttr ? parseInt(cellpaddingAttr, 10) : undefined;
+
+      const style: import("../types.js").SeatLayoutBlock["style"] = {
         marginTop: mtMatch ? parseInt(mtMatch[1], 10) : 0,
         marginLeft: mlMatch ? parseInt(mlMatch[1], 10) : 0,
       };
+      
+      if (cellspacing !== undefined && !isNaN(cellspacing)) style.cellspacing = cellspacing;
+      if (cellpadding !== undefined && !isNaN(cellpadding)) style.cellpadding = cellpadding;
 
       const rows: import("../types.js").SeatLayoutRow[] = [];
 
@@ -232,28 +241,50 @@ export async function fetchSeatLayout(
           const tdStyle = $(td).attr("style") || "";
           const id = $(td).attr("id") || "";
           const text = $(td).text().trim();
+          
+          const colStr = $(td).attr("colspan");
+          const rowStr = $(td).attr("rowspan");
+          const colspan = colStr ? parseInt(colStr, 10) : undefined;
+          const rowspan = rowStr ? parseInt(rowStr, 10) : undefined;
 
           if (cls.startsWith("desk")) {
             // Seat cell — desk = available, desk_over = occupied
             const seatId = parseInt(id || text, 10);
             if (!isNaN(seatId)) {
               const isOccupied = cls.includes("_over");
+              let orientation: "left" | "right" | "top" | "bottom" = "bottom";
+              if (cls.includes("deskL")) orientation = "left";
+              else if (cls.includes("deskR")) orientation = "right";
+              else if (cls.includes("deskT")) orientation = "top";
+              
               totalSeats++;
               if (isOccupied) occupiedSeats.push(seatId);
               hasSeat = true;
-              cells.push({
+              
+              const cellData: import("../types.js").SeatLayoutCell = {
                 type: "seat",
                 seatId,
                 status: isOccupied ? "occupied" : "available",
-              });
+                orientation,
+              };
+              if (colspan && !isNaN(colspan)) cellData.colspan = colspan;
+              if (rowspan && !isNaN(rowspan)) cellData.rowspan = rowspan;
+              cells.push(cellData);
             }
           } else {
             // Gap/spacer cell — extract width
             const wMatch = tdStyle.match(/width:\s*(\d+)px/);
+            
             if (wMatch) {
-              cells.push({ type: "gap", width: parseInt(wMatch[1], 10) });
+              const cellData: import("../types.js").SeatLayoutCell = { type: "gap", width: parseInt(wMatch[1], 10) };
+              if (colspan && !isNaN(colspan)) cellData.colspan = colspan;
+              if (rowspan && !isNaN(rowspan)) cellData.rowspan = rowspan;
+              cells.push(cellData);
             } else {
-              cells.push({ type: "empty" });
+              const cellData: import("../types.js").SeatLayoutCell = { type: "empty" };
+              if (colspan && !isNaN(colspan)) cellData.colspan = colspan;
+              if (rowspan && !isNaN(rowspan)) cellData.rowspan = rowspan;
+              cells.push(cellData);
             }
           }
         });

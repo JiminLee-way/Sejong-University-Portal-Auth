@@ -323,9 +323,16 @@ export interface SeatActionResult {
 // ── Seat Layout (physical) ──
 
 export type SeatLayoutCell =
-  | { type: "seat"; seatId: number; status: SeatStatusType }
-  | { type: "gap"; width: number }
-  | { type: "empty" };
+  | {
+      type: "seat";
+      seatId: number;
+      status: SeatStatusType;
+      orientation?: "left" | "right" | "top" | "bottom";
+      colspan?: number;
+      rowspan?: number;
+    }
+  | { type: "gap"; width: number; colspan?: number; rowspan?: number }
+  | { type: "empty"; colspan?: number; rowspan?: number };
 
 export interface SeatLayoutRow {
   cells: SeatLayoutCell[];
@@ -334,7 +341,7 @@ export interface SeatLayoutRow {
 
 export interface SeatLayoutBlock {
   rows: SeatLayoutRow[];
-  style?: { marginTop?: number; marginLeft?: number };
+  style?: { marginTop?: number; marginLeft?: number; cellspacing?: number; cellpadding?: number };
 }
 
 export interface SeatLayoutResponse {
