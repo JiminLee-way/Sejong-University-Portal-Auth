@@ -9,6 +9,10 @@ import * as staff from "./api/staff.js";
 import * as notifs from "./api/notifications.js";
 import { generateQr, type QrCodeResult } from "./api/qr.js";
 import { getProfilePhoto } from "./api/photo.js";
+import * as scholarship from "./api/scholarship.js";
+import type { ScholarshipListResponse, ScholarshipItem } from "./api/scholarship.js";
+import * as tuition from "./api/tuition.js";
+import type { TuitionNoticeResponse, TuitionPaymentResponse } from "./api/tuition.js";
 import * as timetable from "./api/timetable.js";
 import type { AvailableSemester, TimetableResponse, EnrolledCoursesResponse } from "./api/timetable.js";
 import {
@@ -122,6 +126,40 @@ export class SejongClient {
       refreshKey,
     });
     return generateQr(this.accessToken, data, size);
+  }
+
+  // ── Scholarship ──
+
+  /** 장학금 조회 가능 학기 */
+  async getScholarshipOptions(): Promise<{ year: string; smtCd: string }[]> {
+    this.requireAuth();
+    return scholarship.getYearSemesterOptions(this.accessToken);
+  }
+
+  /** 장학금 목록 */
+  async getScholarships(year: string, smtCd: string): Promise<ScholarshipListResponse> {
+    this.requireAuth();
+    return scholarship.getList(this.accessToken, year, smtCd);
+  }
+
+  // ── Tuition ──
+
+  /** 등록금 고지 조회 가능 학기 */
+  async getTuitionNoticeOptions(): Promise<{ year: string; smtCd: string }[]> {
+    this.requireAuth();
+    return tuition.getNoticeOptions(this.accessToken);
+  }
+
+  /** 등록금 고지서 */
+  async getTuitionNotice(year: string, smtCd: string): Promise<TuitionNoticeResponse> {
+    this.requireAuth();
+    return tuition.getNotice(this.accessToken, year, smtCd);
+  }
+
+  /** 등록금 납부 내역 */
+  async getTuitionPayment(year: string, smtCd: string): Promise<TuitionPaymentResponse> {
+    this.requireAuth();
+    return tuition.getPayment(this.accessToken, year, smtCd);
   }
 
   // ── Timetable ──

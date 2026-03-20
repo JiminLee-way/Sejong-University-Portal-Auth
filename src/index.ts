@@ -45,6 +45,18 @@ export type {
 export type { QrCodeResult } from "./api/qr.js";
 
 export type {
+  ScholarshipItem,
+  ScholarshipListResponse,
+} from "./api/scholarship.js";
+
+export type {
+  TuitionItem,
+  PaymentDetail,
+  TuitionNoticeResponse,
+  TuitionPaymentResponse,
+} from "./api/tuition.js";
+
+export type {
   AvailableSemester,
   TimetableSlot,
   TimetableResponse,
