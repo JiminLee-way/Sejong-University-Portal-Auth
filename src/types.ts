@@ -351,3 +351,25 @@ export interface SeatLayoutResponse {
   occupiedSeats: number[];
   blocks: SeatLayoutBlock[];
 }
+
+// ── Seat Coordinates (pixel-level) ──
+
+export interface SeatCoord {
+  seatId: number;
+  status: SeatStatusType;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  orientation?: "left" | "right" | "top" | "bottom";
+}
+
+export interface SeatMapCoords {
+  roomNo: number;
+  roomName: string;
+  mapImageUrl: string;
+  seatWidth: number;
+  seatHeight: number;
+  totalSeats: number;
+  seats: SeatCoord[];
+}

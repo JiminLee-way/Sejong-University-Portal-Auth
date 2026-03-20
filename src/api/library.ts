@@ -348,6 +348,139 @@ export async function fetchFacilityRooms(
   }
 }
 
+/**
+ * Fetch seat map with exact pixel coordinates for each seat.
+ *
+ * Calculates (x, y) position of every seat by:
+ * 1. Table margin-top/margin-left → block origin
+ * 2. Cumulative cell widths (seat=35px, gap=Npx) → x offset
+ * 3. Cumulative row heights (seat=36px, gap tr=Npx) → y offset
+ * 4. cellspacing between cells
+ *
+ * Also returns the floor plan background image URL.
+ */
+export async function fetchSeatCoords(
+  http: AxiosInstance,
+  token: string,
+  roomNo: number,
+): Promise<import("../types.js").SeatMapCoords> {
+  try {
+    const resp = await http.get(`${LIBSEAT_BASE}/seatMap.php`, {
+      params: { param_room_no: roomNo, token },
+    });
+    const html = typeof resp.data === "string" ? resp.data : "";
+    const $ = cheerio.load(html);
+
+    // Seat dimensions from CSS
+    const SEAT_W = 35;
+    const SEAT_H = 36;
+
+    // Map background image
+    const mapImageMatch = html.match(new RegExp(`map_${String(roomNo).padStart(2, "0")}\\.jpg|map_${roomNo}\\.jpg`));
+    const mapImageUrl = mapImageMatch
+      ? `https://libseat.sejong.ac.kr/mobile/MA/../images/${mapImageMatch[0]}`
+      : "";
+
+    const roomName = $("h4, h5, .room-name").first().text().trim() || `열람실 ${roomNo}`;
+
+    const seats: import("../types.js").SeatCoord[] = [];
+
+    // Track cumulative Y from document flow (tables are position:relative)
+    let flowY = 0;
+
+    $("table").each((_, tableEl) => {
+      const tableHtml = $(tableEl).html() || "";
+      if (!tableHtml.includes("setSeat")) return;
+
+      const style = $(tableEl).attr("style") || "";
+      const mtMatch = style.match(/margin-top:\s*(-?\d+)px/);
+      const mlMatch = style.match(/margin-left:\s*(-?\d+)px/);
+      const cs = parseInt($(tableEl).attr("cellspacing") || "0", 10) || 0;
+
+      const blockX = mlMatch ? parseInt(mlMatch[1], 10) : 0;
+      const marginTop = mtMatch ? parseInt(mtMatch[1], 10) : 0;
+
+      // position: relative means margin-top affects flow position
+      flowY += marginTop;
+      const blockY = flowY;
+
+      let rowY = 0;
+
+      $(tableEl).find("tr").each((_, tr) => {
+        const trStyle = $(tr).attr("style") || "";
+        const hMatch = trStyle.match(/height:\s*(\d+)px/);
+
+        // Gap-only row
+        if (hMatch && $(tr).find("td").length === 0) {
+          rowY += parseInt(hMatch[1], 10);
+          return;
+        }
+
+        let cellX = 0;
+        let rowHasSeats = false;
+
+        $(tr).find("td").each((_, td) => {
+          const cls = $(td).attr("class") || "";
+          const tdStyle = $(td).attr("style") || "";
+          const id = $(td).attr("id") || "";
+          const text = $(td).text().trim();
+
+          if (cls.startsWith("desk")) {
+            const seatId = parseInt(id || text, 10);
+            if (!isNaN(seatId)) {
+              const isOccupied = cls.includes("_over");
+              let orientation: "left" | "right" | "top" | "bottom" | undefined;
+              if (cls.includes("deskL")) orientation = "left";
+              else if (cls.includes("deskR")) orientation = "right";
+              else if (cls.includes("deskT")) orientation = "top";
+
+              seats.push({
+                seatId,
+                status: isOccupied ? "occupied" : "available",
+                x: blockX + cellX,
+                y: blockY + rowY,
+                width: SEAT_W,
+                height: SEAT_H,
+                orientation,
+              });
+              rowHasSeats = true;
+            }
+            cellX += SEAT_W + cs;
+          } else {
+            // Gap or empty cell
+            const wMatch = tdStyle.match(/width:\s*(\d+)px/);
+            if (wMatch) {
+              cellX += parseInt(wMatch[1], 10) + cs;
+            }
+          }
+        });
+
+        if (rowHasSeats) {
+          rowY += SEAT_H + cs;
+        }
+        // Height gap from tr style
+        if (hMatch) {
+          rowY += parseInt(hMatch[1], 10);
+        }
+      });
+
+      flowY += rowY;
+    });
+
+    return {
+      roomNo,
+      roomName,
+      mapImageUrl,
+      seatWidth: SEAT_W,
+      seatHeight: SEAT_H,
+      totalSeats: seats.length,
+      seats: seats.sort((a, b) => a.seatId - b.seatId),
+    };
+  } catch (e) {
+    throw new ParseError(`Failed to parse seat coords: ${e}`);
+  }
+}
+
 /** Fetch study room reservation page to get available rooms/times */
 export async function fetchStudyRoomReservation(
   http: AxiosInstance,

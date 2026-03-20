@@ -40,6 +40,8 @@ export type {
   SeatLayoutCell,
   SeatLayoutBlock,
   SeatLayoutResponse,
+  SeatCoord,
+  SeatMapCoords,
 } from "./types.js";
 
 export type { QrCodeResult } from "./api/qr.js";

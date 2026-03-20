@@ -21,6 +21,7 @@ import {
   fetchMySeat,
   fetchSeatMap,
   fetchSeatLayout,
+  fetchSeatCoords,
   fetchFacilityRooms,
   fetchStudyRoomReservation,
 } from "./api/library.js";
@@ -367,6 +368,12 @@ export class SejongClient {
   async getFacilityRooms(type: FacilityType): Promise<FacilityRoom[]> {
     const { http, token } = await this.ensureLibseat();
     return fetchFacilityRooms(http, token, type);
+  }
+
+  /** 좌석 좌표 배치도 — 각 좌석의 정확한 (x,y) px 좌표 + 배경 이미지 URL */
+  async getSeatCoords(roomNo: number): Promise<import("./types.js").SeatMapCoords> {
+    const { http, token } = await this.ensureLibseat();
+    return fetchSeatCoords(http, token, roomNo);
   }
 
   /** 좌석 예약 (setSeat) */
