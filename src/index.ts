@@ -47,6 +47,13 @@ export type {
 export type { QrCodeResult } from "./api/qr.js";
 
 export type {
+  Building,
+  Place,
+  MenuItem,
+  MealType,
+} from "./api/food.js";
+
+export type {
   ScholarshipItem,
   ScholarshipListResponse,
 } from "./api/scholarship.js";

@@ -10,6 +10,8 @@ import * as notifs from "./api/notifications.js";
 import { generateQr, type QrCodeResult } from "./api/qr.js";
 import { getProfilePhoto } from "./api/photo.js";
 import * as scholarship from "./api/scholarship.js";
+import * as food from "./api/food.js";
+import type { Building, Place, MenuItem, MealType } from "./api/food.js";
 import type { ScholarshipListResponse, ScholarshipItem } from "./api/scholarship.js";
 import * as tuition from "./api/tuition.js";
 import type { TuitionNoticeResponse, TuitionPaymentResponse } from "./api/tuition.js";
@@ -127,6 +129,28 @@ export class SejongClient {
       refreshKey,
     });
     return generateQr(this.accessToken, data, size);
+  }
+
+  // ── Food / Cafeteria (인증 불필요) ──
+
+  /** 학식 건물 목록 (군자관, 진관홀, 학생회관) */
+  async getFoodBuildings(): Promise<Building[]> {
+    return food.getBuildings();
+  }
+
+  /** 건물별 식당 목록 */
+  async getFoodPlaces(buildingId: number): Promise<Place[]> {
+    return food.getPlaces(buildingId);
+  }
+
+  /** 식당별 메뉴 */
+  async getFoodMenus(placeId: number): Promise<MenuItem[]> {
+    return food.getMenus(placeId);
+  }
+
+  /** 식당별 식사 유형 (조식/중식/석식 + 가격) */
+  async getFoodMealTypes(placeId: number): Promise<MealType[]> {
+    return food.getMealTypes(placeId);
   }
 
   // ── Scholarship ──
