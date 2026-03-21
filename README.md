@@ -554,9 +554,11 @@ try {
 1. POST sjapp.sejong.ac.kr/api/auth/login  →  JWT accessToken
 2. GET  sjapp.sejong.ac.kr/api/secureapi/*  →  JSON 데이터 (Bearer token)
 3. GET  sjapp.sejong.ac.kr/api/publicapi/*  →  JSON 데이터 (토큰 불필요)
+4. GET  sjapp.sejong.ac.kr/api/secureapi/library/reading-room-token  →  libseat token
+5. GET  libseat.sejong.ac.kr/mobile/MA/*.php?token=...  →  도서관 좌석 데이터
 ```
 
-> `sjapp.sejong.ac.kr`는 세종대 공식 모바일 앱의 백엔드입니다. portal.sejong.ac.kr의 WebSquare가 아닌 순수 REST API를 사용하므로 브라우저 세션 충돌이 없습니다.
+> `sjapp.sejong.ac.kr`는 세종대 공식 모바일 앱의 백엔드입니다. 도서관 좌석도 sjapp에서 직접 토큰을 발급받아 `library.sejong.ac.kr` 경유 없이 접근합니다.
 
 ## NFC 출입 (S1Pass) 프로토콜 분석
 
@@ -643,6 +645,7 @@ src/
   ```
 - **좌석 예약/발권확정**: 도서관 게이트 통과 후(도서관 내부)에서만 가능합니다
 - **좌석 연장**: 도서관 내부 Wi-Fi/비콘 검증이 필요하여 외부에서 호출 시 실패합니다
+- **도서관 토큰**: `sjapp.sejong.ac.kr/api/secureapi/library/reading-room-token`에서 직접 발급 (기존 `library.sejong.ac.kr` 경유 방식은 서버 다운으로 폐기)
 
 ## Development
 
