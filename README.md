@@ -132,6 +132,11 @@ const notices = await client.getNotices('academic', { page: 0, size: 5 });
 | `getPresenceInspections()` | O | 출결 점검 |
 | `getPresenceStatistics()` | O | 출결 통계 |
 | `getPresenceSettings()` | O | 출결 설정 |
+| `getPresenceAppeals()` | O | 출결 이의신청 |
+| `getDiscretionarySpendingOptions()` | O | 자율경비 조회 가능 학기 |
+| `getDiscretionarySpending(year, smtCd)` | O | 자율경비 내역 |
+| `getFaqCategories()` | - | FAQ 카테고리 |
+| `getFaqList(page?, size?, categoryId?)` | - | FAQ 목록 |
 | `getLibraryRooms()` | O | 열람실 좌석 현황 |
 | `getMySeat()` | O | 나의 좌석 |
 | `getSeatMap(roomNo)` | O | 좌석 배치도 (간단) |
@@ -682,11 +687,12 @@ src/
 
 ## Known Issues
 
-- **수강 학점 합산 오류**: `getEnrolledCourses()`의 `creditSummary.totalCredits`가 전공 학점만 합산하고 균필/교양 학점을 누락하는 서버 버그가 있습니다. 정확한 학점은 `courses`를 직접 합산하세요:
+- **수강 학점 합산 오류**: `getEnrolledCourses()`의 `creditSummary.totalCredits`가 과거 학기는 0을 반환하고 현재 학기는 균필/교양 누락하는 서버 버그가 있습니다. 정확한 학점은 `courses`를 직접 합산하세요:
   ```typescript
   const enrolled = await client.getEnrolledCourses('2026', '10');
   const realCredits = enrolled.courses.reduce((sum, c) => sum + c.credits, 0);
   ```
+- **전체 성적 과목 미포함**: `getGrades()`의 `semesters[].courses`가 빈 배열로 오는 경우가 있습니다. 학기별 상세는 `getSemesterGrades(year, smtCd)`를 사용하세요 (계절학기 smtCd: 10=1학기, 11=여름, 20=2학기, 21=겨울)
 - **좌석 예약/발권확정**: 도서관 게이트 통과 후(도서관 내부)에서만 가능합니다
 - **좌석 연장**: 도서관 내부 Wi-Fi/비콘 검증이 필요하여 외부에서 호출 시 실패합니다
 - **도서관 토큰**: `sjapp.sejong.ac.kr/api/secureapi/library/reading-room-token`에서 직접 발급 (기존 `library.sejong.ac.kr` 경유 방식은 서버 다운으로 폐기)

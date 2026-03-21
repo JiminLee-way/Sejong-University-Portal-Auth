@@ -24,3 +24,8 @@ export async function getSettings(accessToken: string): Promise<unknown> {
   const resp = await client(accessToken).get<ApiResponse<unknown>>("/api/secureapi/presence/settings");
   return unwrap(resp);
 }
+
+export async function getAppeals(accessToken: string): Promise<unknown[]> {
+  const resp = await client(accessToken).get<ApiResponse<unknown[]>>("/api/secureapi/presence/appeals");
+  return unwrap(resp);
+}

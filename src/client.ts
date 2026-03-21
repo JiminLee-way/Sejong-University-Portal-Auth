@@ -15,6 +15,8 @@ import { getDormWeeklyMenu, type DormWeeklyMenu } from "./api/dormitory.js";
 import { getWeather, type Weather } from "./api/weather.js";
 import { getBanners, type Banner } from "./api/banners.js";
 import * as studyroom from "./api/studyroom.js";
+import * as faq from "./api/faq.js";
+import type { FaqCategory } from "./api/faq.js";
 import type { StudyRoomReservationsResponse } from "./api/studyroom.js";
 import * as presence from "./api/presence.js";
 import type { Building, Place, MenuItem, MealType } from "./api/food.js";
@@ -219,6 +221,18 @@ export class SejongClient {
   async getTuitionPayment(year: string, smtCd: string): Promise<TuitionPaymentResponse> {
     this.requireAuth();
     return tuition.getPayment(this.accessToken, year, smtCd);
+  }
+
+  /** 자율경비 조회 가능 학기 */
+  async getDiscretionarySpendingOptions(): Promise<{ year: string; smtCd: string }[]> {
+    this.requireAuth();
+    return tuition.getDiscretionarySpendingOptions(this.accessToken);
+  }
+
+  /** 자율경비 내역 */
+  async getDiscretionarySpending(year: string, smtCd: string): Promise<unknown> {
+    this.requireAuth();
+    return tuition.getDiscretionarySpending(this.accessToken, year, smtCd);
   }
 
   // ── Timetable ──
@@ -432,6 +446,24 @@ export class SejongClient {
   async getPresenceSettings(): Promise<unknown> {
     this.requireAuth();
     return presence.getSettings(this.accessToken);
+  }
+
+  /** 출결 이의신청 */
+  async getPresenceAppeals(): Promise<unknown[]> {
+    this.requireAuth();
+    return presence.getAppeals(this.accessToken);
+  }
+
+  // ── FAQ (인증 불필요) ──
+
+  /** FAQ 카테고리 */
+  async getFaqCategories(): Promise<FaqCategory[]> {
+    return faq.getCategories();
+  }
+
+  /** FAQ 목록 */
+  async getFaqList(page?: number, size?: number, categoryId?: string): Promise<import("./types.js").PagedData<unknown>> {
+    return faq.getList(page, size, categoryId);
   }
 
   // ── Library (libseat, existing) ──

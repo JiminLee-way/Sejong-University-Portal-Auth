@@ -59,6 +59,8 @@ export type { Banner } from "./api/banners.js";
 
 export type { StudyRoomReservation, StudyRoomReservationsResponse } from "./api/studyroom.js";
 
+export type { FaqCategory } from "./api/faq.js";
+
 export type {
   Building,
   Place,

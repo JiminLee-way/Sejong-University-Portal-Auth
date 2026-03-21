@@ -60,3 +60,14 @@ export async function getPayment(accessToken: string, year: string, smtCd: strin
   const resp = await client(accessToken).get<ApiResponse<TuitionPaymentResponse>>("/api/secureapi/tuition/payment", { params: { year, smtCd } });
   return unwrap(resp);
 }
+
+/** 자율경비 내역 */
+export async function getDiscretionarySpending(accessToken: string, year: string, smtCd: string): Promise<unknown> {
+  const resp = await client(accessToken).get<ApiResponse<unknown>>("/api/secureapi/discretionary-spending/detail", { params: { year, smtCd } });
+  return unwrap(resp);
+}
+
+export async function getDiscretionarySpendingOptions(accessToken: string): Promise<YearSemesterOption[]> {
+  const resp = await client(accessToken).get<ApiResponse<YearSemesterOption[]>>("/api/secureapi/discretionary-spending/year-semester-options");
+  return unwrap(resp);
+}
