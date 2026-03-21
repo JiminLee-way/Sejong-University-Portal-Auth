@@ -12,6 +12,8 @@ import { getProfilePhoto } from "./api/photo.js";
 import * as scholarship from "./api/scholarship.js";
 import * as food from "./api/food.js";
 import { getDormWeeklyMenu, type DormWeeklyMenu } from "./api/dormitory.js";
+import { getWeather, type Weather } from "./api/weather.js";
+import { getBanners, type Banner } from "./api/banners.js";
 import type { Building, Place, MenuItem, MealType } from "./api/food.js";
 import type { ScholarshipListResponse, ScholarshipItem } from "./api/scholarship.js";
 import * as tuition from "./api/tuition.js";
@@ -134,6 +136,20 @@ export class SejongClient {
     return generateQr(this.accessToken, data, size);
   }
 
+  // ── Weather (인증 불필요) ──
+
+  /** 현재 날씨 (기온, 습도, 풍속, 하늘상태) */
+  async getWeather(): Promise<Weather> {
+    return getWeather();
+  }
+
+  // ── Banners (인증 불필요) ──
+
+  /** 메인 배너 목록 */
+  async getBanners(type = "MAIN"): Promise<Banner[]> {
+    return getBanners(type);
+  }
+
   // ── Food / Cafeteria (인증 불필요) ──
 
   /** 학식 건물 목록 (군자관, 진관홀, 학생회관) */
@@ -154,6 +170,11 @@ export class SejongClient {
   /** 식당별 식사 유형 (조식/중식/석식 + 가격) */
   async getFoodMealTypes(placeId: number): Promise<MealType[]> {
     return food.getMealTypes(placeId);
+  }
+
+  /** 날짜별 식단 스케줄 */
+  async getFoodScheduleByDate(date: string, placeId: number): Promise<unknown[]> {
+    return food.getScheduleByDate(date, placeId);
   }
 
   // ── Dormitory Meals (인증 불필요) ──

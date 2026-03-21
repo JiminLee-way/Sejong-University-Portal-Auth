@@ -59,3 +59,9 @@ export async function getMealTypes(placeId: number): Promise<MealType[]> {
   const resp = await client().get<ApiResponse<MealType[]>>(`/api/publicapi/food/places/${placeId}/meal-types`);
   return unwrap(resp);
 }
+
+/** 날짜별 식단 스케줄 (조식/중식/석식 메뉴) */
+export async function getScheduleByDate(date: string, placeId: number): Promise<unknown[]> {
+  const resp = await client().get<ApiResponse<unknown[]>>(`/api/publicapi/food/schedules/date/${date}`, { params: { placeId } });
+  return unwrap(resp);
+}

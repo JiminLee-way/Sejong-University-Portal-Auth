@@ -25,6 +25,8 @@
 - **도서관 좌석** — 열람실 현황, 물리 배치도, 좌석 px 좌표, 예약/발권/연장/반납
 - **스터디룸/시네마룸/S-Lounge** — 그룹 목록, 시간대별 예약 현황, 예약/취소
 - **예약 내역** — 열람실/스터디룸/시네마룸/S-Lounge 전체 이용 내역
+- **날씨** — 현재 기온, 습도, 풍속, 하늘상태 (인증 불필요)
+- **메인 배너** — 대학 홍보 배너 이미지/링크 (인증 불필요)
 - **Pure JSON** — HTML 파싱 없음, 모든 응답이 구조화된 JSON
 
 ## Quick Start
@@ -102,6 +104,9 @@ const notices = await client.getNotices('academic', { page: 0, size: 5 });
 | `getFoodMenus(placeId)` | - | 식당 메뉴 + 가격 |
 | `getFoodMealTypes(placeId)` | - | 조식/중식/석식 유형 + 가격 |
 | `getDormWeeklyMenu(date?)` | - | 기숙사 주간 식단표 |
+| `getFoodScheduleByDate(date, placeId)` | - | 날짜별 식단 스케줄 |
+| `getWeather()` | - | 현재 날씨 (기온, 습도, 풍속) |
+| `getBanners(type?)` | - | 메인 배너 목록 |
 | `getSeatCoords(roomNo)` | O | 좌석 px 좌표 + 배경 이미지 |
 | `getNotices(category, {page, size})` | - | 공지사항 목록 |
 | `getNoticeDetail(category, id)` | - | 공지사항 상세 |
@@ -230,6 +235,35 @@ const notices = await client.getNotices('academic', { page: 0, size: 5 });
     { "processDate": "2026-02-23", "category": "수납", "amount": 2534000 }
   ]
 }
+```
+
+### 날씨 (`getWeather`)
+
+```json
+{
+  "temperature": "14.8℃",
+  "weatherCondition": "맑음",
+  "humidity": 26,
+  "windSpeed": 3.3,
+  "skyCode": "1",
+  "ptyCode": "0",
+  "regionName": "서울"
+}
+```
+
+### 메인 배너 (`getBanners`)
+
+```json
+[
+  {
+    "bannerId": "1b5fd6a6-...",
+    "imageUrl": "https://www.sejong.ac.kr/.../img-proud-logo01.png",
+    "altText": "U.S.News",
+    "titleName": "2025-2026 US News 세계대학평가 2년 연속 국내 3위",
+    "linkUrl": "https://news.chosun.com/...",
+    "targetType": "EXTERNAL"
+  }
+]
 ```
 
 ### 증명사진 (`getProfilePhoto`)
@@ -622,6 +656,8 @@ src/
 │   ├── tuition.ts        # 등록금
 │   ├── food.ts           # 학식 메뉴
 │   ├── dormitory.ts      # 기숙사 식단
+│   ├── weather.ts        # 날씨
+│   ├── banners.ts        # 메인 배너
 │   ├── notices.ts        # 공지사항
 │   ├── news.ts           # 세종뉴스
 │   ├── feeds.ts          # 소셜 피드
