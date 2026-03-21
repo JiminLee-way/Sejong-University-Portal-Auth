@@ -150,7 +150,7 @@ const notices = await client.getNotices('academic', { page: 0, size: 5 });
 | `extendSeat()` | O | 좌석 연장 |
 | `returnSeat()` | O | 좌석 반납 |
 | `getStudyRoomReservation()` | O | 스터디룸 예약 가능 목록 |
-| `reserveStudyRoom(roomNo, date, start, end)` | O | 스터디룸 예약 |
+| `reserveStudyRoom(roomNo, reserveDate, startTime, useTime?)` | O | 시설 예약 (스터디룸/시네마/라운지 공통) |
 | `cancelStudyRoom(reserveNo)` | O | 스터디룸 예약 취소 |
 
 **Auth 컬럼**: `O` = 로그인 필요, `-` = 로그인 불필요 (공개 API)
@@ -588,14 +588,42 @@ const res = await client.getMyReservations();
 }
 ```
 
-### 스터디룸 예약 (`reserveStudyRoom`)
+### 시설 예약/조회 전체 흐름
 
 ```typescript
-// 스터디룸 예약 (roomNo, 날짜, 시작시간, 종료시간)
-await client.reserveStudyRoom(1, '2026-04-01', 10, 12);
+// 1. 시설 그룹 조회 (정원/최소인원 포함)
+const cinema = await client.getFacilityGroups('cinema');
+// → [{ name: "시네마룸 3인실", seatCnt: 3, roomGB: "S2", seq: 0 }]
 
-// 스터디룸 예약 취소
+const lounge = await client.getFacilityGroups('lounge');
+// → [{ name: "S-Lounge 6인석", seatCnt: 6 }, { name: "S-Loung 4인석", seatCnt: 4 }]
+
+// 2. 시간대별 예약 가능 여부 (09:00~22:00)
+const schedule = await client.getFacilitySchedule('cinema', 'S2', 0);
+schedule.timeSlots.forEach(t =>
+  console.log(`${t.time} ${t.available ? '✓ 가능' : '✗ 예약됨'}`)
+);
+
+// 3. 예약 (roomNo, 날짜 YYYYMMDD, 시작시간, 사용시간(분))
+await client.reserveStudyRoom(22, '20260326', 1000, 120);  // 10시, 2시간
+
+// 4. 예약 취소
 await client.cancelStudyRoom('12345');
+
+// 5. 내 예약 이력 (sjapp 네이티브 — 스터디룸/시네마/라운지 통합)
+const reservations = await client.getStudyRoomReservations();
+// → { reservations: [
+//   { roomName: "01 스터디룸(4층)", status: "자동만료", requestDateTime: "20251029" },
+//   { roomName: "시네마룸3", status: "취소", requestDateTime: "20250509" },
+//   { roomName: "SL16", status: "자동만료", requestDateTime: "20250509" }
+// ]}
+
+// 6. 전체 이용 내역 (libseat — 열람실/스터디룸/시네마/라운지 탭별)
+const res = await client.getMyReservations();
+res.history.readingRoom;  // [{ date, time, roomName, status }]
+res.history.studyRoom;
+res.history.cinema;
+res.history.lounge;
 ```
 
 ---
