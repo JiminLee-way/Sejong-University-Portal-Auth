@@ -46,6 +46,8 @@ export type {
   FacilityGroup,
   FacilityTimeSlot,
   FacilitySchedule,
+  FacilityRoomSlot,
+  FacilityAvailability,
   ReservationRecord,
   MyReservations,
 } from "./types.js";

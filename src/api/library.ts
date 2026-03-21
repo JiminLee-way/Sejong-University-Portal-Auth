@@ -601,6 +601,76 @@ export async function fetchFacilitySchedule(
   }
 }
 
+/**
+ * Fetch detailed facility availability — dates, rooms, time slots.
+ * Parses sroomMap/cinemaMap/loungeMap HTML for reservation links.
+ */
+export async function fetchFacilityAvailability(
+  http: AxiosInstance,
+  token: string,
+  type: "studyroom" | "cinema" | "lounge",
+  roomGB: string,
+  seq: number,
+): Promise<import("../types.js").FacilityAvailability> {
+  const pages: Record<string, string> = {
+    studyroom: "sroomMap.php",
+    cinema: "cinemaMap.php",
+    lounge: "loungeMap.php",
+  };
+
+  try {
+    const resp = await http.get(`${LIBSEAT_BASE}/${pages[type]}`, {
+      params: { token, roomGB, seq },
+    });
+    const $ = cheerio.load(resp.data);
+
+    const dates: string[] = [];
+    const slots: import("../types.js").FacilityRoomSlot[] = [];
+
+    // Parse all reservation links
+    $("a[href*='sroomReserveMain']").each((_, el) => {
+      const href = $(el).attr("href") || "";
+      const text = $(el).text().trim();
+
+      const dateMatch = href.match(/reserveDate=(\d{8})/);
+      const roomNoMatch = href.match(/sroomNo=(\d+)/);
+      const nameMatch = href.match(/sroomName=([^&]*)/);
+      const timeMatch = href.match(/startTime=(\d+)/);
+
+      if (dateMatch && timeMatch) {
+        const date = dateMatch[1];
+        if (!dates.includes(date)) dates.push(date);
+
+        slots.push({
+          date,
+          sroomNo: roomNoMatch ? parseInt(roomNoMatch[1], 10) : 0,
+          roomName: nameMatch ? decodeURIComponent(nameMatch[1]) : "",
+          startTime: timeMatch[1],
+          available: text.includes("예약가능"),
+        });
+      }
+    });
+
+    // Also parse "예약불가" cells
+    $("td").each((_, td) => {
+      const text = $(td).text().trim();
+      if (text === "예약불가") {
+        // These are unavailable slots but we can't get the exact params without href
+        // They're already excluded since only "예약가능" links are parsed above
+      }
+    });
+
+    return {
+      roomGB,
+      seq,
+      dates: dates.sort(),
+      slots,
+    };
+  } catch (e) {
+    throw new ParseError(`Failed to parse facility availability: ${e}`);
+  }
+}
+
 /** Fetch all reservation data: current seat, facility, history (열람실/스터디룸/시네마/라운지) */
 export async function fetchMyReservations(
   http: AxiosInstance,

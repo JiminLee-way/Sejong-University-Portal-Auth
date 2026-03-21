@@ -372,6 +372,21 @@ export interface FacilitySchedule {
   timeSlots: FacilityTimeSlot[];
 }
 
+export interface FacilityRoomSlot {
+  date: string;
+  sroomNo: number;
+  roomName: string;
+  startTime: string;
+  available: boolean;
+}
+
+export interface FacilityAvailability {
+  roomGB: string;
+  seq: number;
+  dates: string[];
+  slots: FacilityRoomSlot[];
+}
+
 // ── Reservation History ──
 
 export interface ReservationRecord {

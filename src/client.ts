@@ -35,6 +35,7 @@ import {
   fetchStudyRoomReservation,
   fetchFacilityGroups,
   fetchFacilitySchedule,
+  fetchFacilityAvailability,
   fetchMyReservations,
 } from "./api/library.js";
 import {
@@ -510,6 +511,12 @@ export class SejongClient {
   async getFacilitySchedule(type: "studyroom" | "cinema" | "lounge", roomGB: string, seq: number): Promise<import("./types.js").FacilitySchedule> {
     const { http, token } = await this.ensureLibseat();
     return fetchFacilitySchedule(http, token, type, roomGB, seq);
+  }
+
+  /** 시설 날짜별 예약 가능 시간대 (날짜 + 호실 + 시간 상세) */
+  async getFacilityAvailability(type: "studyroom" | "cinema" | "lounge", roomGB: string, seq: number): Promise<import("./types.js").FacilityAvailability> {
+    const { http, token } = await this.ensureLibseat();
+    return fetchFacilityAvailability(http, token, type, roomGB, seq);
   }
 
   /** 전체 예약 현황 (현재 좌석 + 시설 + 이용 내역 전체) */
