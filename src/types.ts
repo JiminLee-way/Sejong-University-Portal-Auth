@@ -356,6 +356,7 @@ export interface FacilityGroup {
   type: "studyroom" | "cinema" | "lounge";
   name: string;
   capacity: string;
+  seatCnt: number;
   roomGB: string;
   seq: number;
 }

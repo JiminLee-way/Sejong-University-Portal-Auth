@@ -539,12 +539,16 @@ export async function fetchFacilityGroups(
       const roomGB = href.match(/roomGB=(\w+)/)?.[1] || "";
       const seq = parseInt(href.match(/seq=(\d+)/)?.[1] || "0", 10);
       const capacityMatch = text.match(/(\d+)인/);
+      const seatCntMatch = href.match(/seatCnt=(\d+)/);
+      const seatCnt = seatCntMatch ? parseInt(seatCntMatch[1], 10)
+        : capacityMatch ? parseInt(capacityMatch[1], 10) : 0;
 
       if (text && roomGB) {
         groups.push({
           type,
           name: text,
           capacity: capacityMatch?.[1] ? `${capacityMatch[1]}인` : "",
+          seatCnt,
           roomGB,
           seq,
         });

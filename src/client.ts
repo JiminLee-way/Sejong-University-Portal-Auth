@@ -550,10 +550,16 @@ export class SejongClient {
     return fetchStudyRoomReservation(http, token);
   }
 
-  /** 스터디룸 예약 */
-  async reserveStudyRoom(roomNo: number, date: string, startTime: number, endTime: number): Promise<SeatActionResult> {
+  /**
+   * 시설 예약 (스터디룸/시네마룸/S-Lounge 공통)
+   * @param roomNo 호실 번호
+   * @param reserveDate 예약일 (YYYYMMDD)
+   * @param startTime 시작 시간 (예: 1000)
+   * @param useTime 사용 시간(분, 기본 120)
+   */
+  async reserveStudyRoom(roomNo: number, reserveDate: string, startTime: number, useTime = 120): Promise<SeatActionResult> {
     const { http, token } = await this.ensureLibseat();
-    return doReserveStudyRoom(http, token, this.userId, roomNo, date, startTime, endTime);
+    return doReserveStudyRoom(http, token, this.userId, roomNo, reserveDate, startTime, useTime, this.username);
   }
 
   /** 스터디룸 예약 취소 */

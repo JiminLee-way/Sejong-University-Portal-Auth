@@ -116,22 +116,31 @@ export async function returnSeat(
 
 // ── 스터디룸 예약 (sroomReserve) ──
 
+/**
+ * 시설 예약 (스터디룸/시네마룸/S-Lounge 공통)
+ * @param roomNo - 호실 번호 (sroomNo)
+ * @param reserveDate - 예약일 (YYYYMMDD)
+ * @param startTime - 시작 시간 (예: 1000 = 10:00)
+ * @param useTime - 사용 시간(분) (예: 120 = 2시간)
+ * @param userName - 예약자 이름
+ */
 export async function reserveStudyRoom(
   http: AxiosInstance,
   token: string,
   userId: string,
   roomNo: number,
-  date: string,
+  reserveDate: string,
   startTime: number,
-  endTime: number,
+  useTime = 120,
+  userName = "",
 ): Promise<SeatActionResult> {
   return postSeatAction(http, "sroomReserve.php", {
-    token,
     userID: userId,
-    room_no: String(roomNo),
-    date,
+    userName,
+    roomNo: String(roomNo),
+    reserveDate,
     startTime: String(startTime),
-    endTime: String(endTime),
+    useTime: String(useTime),
   }, "reserve");
 }
 
