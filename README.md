@@ -363,35 +363,57 @@ setInterval(async () => {
 
 ### 성적 조회 (`getGrades`)
 
+`getGrades()`는 전체 요약 + 학기별 요약 + **가장 최근 학기 과목 상세**를 반환합니다.
+
 ```json
 {
   "overallSummary": {
-    "reqCdt": 36,
-    "appCdt": 35,
-    "totMrks": 97.5,
-    "gruCdt": 35,
-    "avgMrks": 3.82,
-    "sco": 85
+    "reqCdt": 36, "appCdt": 35, "totMrks": 97.5,
+    "gruCdt": 35, "avgMrks": 2.95, "sco": 83
   },
   "semesters": [
-    {
-      "yearSmtNm": "2025 / 2학기",
-      "year": 2025,
-      "smtCd": "20",
-      "summary": { "reqCdt": 18, "appCdt": 18, "avgMrks": 3.72 },
-      "courses": [
-        {
-          "curiNo": "000304",
-          "curiNm": "공업수학1",
-          "curiTypeCdNm": "전기",
-          "cdt": 3,
-          "grade": "A+",
-          "mrks": 4.5
-        }
-      ]
-    }
-  ]
+    { "yearSmtNm": "2025 / 2학기", "year": "2025", "smtCd": "20", "reqCdt": 19, "appCdt": 19, "sco": 83, "avgMrks": 2.91 },
+    { "yearSmtNm": "2025 / 여름학기", "year": "2025", "smtCd": "11", "reqCdt": 3, "appCdt": 3, "sco": 94, "avgMrks": 4.0 },
+    { "yearSmtNm": "2025 / 1학기", "year": "2025", "smtCd": "10", "reqCdt": 14, "appCdt": 13, "sco": 81, "avgMrks": 2.77 }
+  ],
+  "selectedSemester": {
+    "year": "2025", "smtCd": "20", "smtCdNm": "2025 / 2학기",
+    "summary": { "reqCdt": 19, "appCdt": 19, "avgMrks": 2.91 },
+    "courses": [
+      { "curiNm": "선형대수", "cdt": 3, "curiTypeCdNm": "전기", "grade": "C+", "mrks": 2.5 },
+      { "curiNm": "공업수학1", "cdt": 3, "curiTypeCdNm": "전기", "grade": "D0", "mrks": 1.0 },
+      { "curiNm": "고급C프로그래밍및실습", "cdt": 3, "curiTypeCdNm": "전기", "grade": "B+", "mrks": 3.5 },
+      { "curiNm": "대학영어", "cdt": 2, "curiTypeCdNm": "공필", "grade": "B0", "mrks": 3.0 }
+    ]
+  }
 }
+```
+
+> `semesters`는 **학기별 요약만** (과목 없음). `selectedSemester`가 **가장 최근 학기의 상세 과목**. 다른 학기는 `getSemesterGrades(year, smtCd)`로 조회.
+
+```typescript
+// 학기 코드: 10=1학기, 11=여름, 20=2학기, 21=겨울
+const grades = await client.getGrades();
+
+// 전체 요약
+console.log(`전체 GPA: ${grades.overallSummary.avgMrks}`);
+console.log(`취득학점: ${grades.overallSummary.appCdt}`);
+console.log(`백분위: ${grades.overallSummary.sco}`);
+
+// 학기별 요약
+grades.semesters.forEach(sem => {
+  console.log(`${sem.yearSmtNm}: ${sem.appCdt}학점, GPA ${sem.avgMrks}, 백분위 ${sem.sco}`);
+});
+
+// 가장 최근 학기 과목 상세
+grades.selectedSemester.courses.forEach(c => {
+  console.log(`  ${c.curiNm} (${c.curiTypeCdNm}) ${c.cdt}학점 ${c.grade}`);
+});
+
+// 특정 학기 과목 상세 (계절학기 포함)
+const summer = await client.getSemesterGrades('2025', '11'); // 여름학기
+summer.courses.forEach(c => console.log(`${c.curiNm} ${c.grade}`));
+```
 ```
 
 ### 공지사항 (`getNotices`)

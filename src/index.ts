@@ -8,6 +8,7 @@ export type {
   GradeAllResponse,
   GradeCurrentResponse,
   GradeSemester,
+  GradeSemesterSummary,
   GradeCourse,
   GradeOverallSummary,
   SemesterSummary,

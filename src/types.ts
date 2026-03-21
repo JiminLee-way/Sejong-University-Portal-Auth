@@ -83,19 +83,32 @@ export interface SemesterSummary {
 }
 
 export interface GradeCourse {
-  curiNo: string;
   curiNm: string;
-  curiTypeCdNm: string;
   cdt: number;
+  curiTypeCdNm: string;
   grade: string;
   mrks: number;
+  reInfo?: string | null;
+  curiNo?: string;
   [key: string]: unknown;
 }
 
-export interface GradeSemester {
+/** 학기 요약 (semesters 배열 내) */
+export interface GradeSemesterSummary {
   yearSmtNm: string;
-  year: number;
+  year: string;
   smtCd: string;
+  reqCdt: number;
+  appCdt: number;
+  sco: number;
+  avgMrks: number;
+}
+
+/** 학기 상세 (selectedSemester / semester 조회 결과) */
+export interface GradeSemester {
+  year: string;
+  smtCd: string;
+  smtCdNm?: string;
   summary: SemesterSummary;
   courses: GradeCourse[];
 }
@@ -111,7 +124,10 @@ export interface GradeOverallSummary {
 
 export interface GradeAllResponse {
   overallSummary: GradeOverallSummary;
-  semesters: GradeSemester[];
+  /** 학기별 요약 (과목 없음, 학점/GPA/백분위만) */
+  semesters: GradeSemesterSummary[];
+  /** 가장 최근 학기의 상세 과목 목록 */
+  selectedSemester: GradeSemester;
 }
 
 export interface GradeCurrentResponse {
