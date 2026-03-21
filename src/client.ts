@@ -14,6 +14,9 @@ import * as food from "./api/food.js";
 import { getDormWeeklyMenu, type DormWeeklyMenu } from "./api/dormitory.js";
 import { getWeather, type Weather } from "./api/weather.js";
 import { getBanners, type Banner } from "./api/banners.js";
+import * as studyroom from "./api/studyroom.js";
+import type { StudyRoomReservationsResponse } from "./api/studyroom.js";
+import * as presence from "./api/presence.js";
 import type { Building, Place, MenuItem, MealType } from "./api/food.js";
 import type { ScholarshipListResponse, ScholarshipItem } from "./api/scholarship.js";
 import * as tuition from "./api/tuition.js";
@@ -395,6 +398,40 @@ export class SejongClient {
   async updateNotificationSettings(settings: NotificationSettings): Promise<void> {
     this.requireAuth();
     return notifs.updateSettings(this.accessToken, settings);
+  }
+
+  // ── Study Room Reservations (sjapp API) ──
+
+  /** 스터디룸/시네마룸/S-Lounge 예약 이력 (sjapp 네이티브) */
+  async getStudyRoomReservations(): Promise<StudyRoomReservationsResponse> {
+    this.requireAuth();
+    return studyroom.getReservations(this.accessToken);
+  }
+
+  // ── Presence (출결) ──
+
+  /** 출결 기록 */
+  async getPresenceRecords(): Promise<unknown[]> {
+    this.requireAuth();
+    return presence.getRecords(this.accessToken);
+  }
+
+  /** 출결 점검 */
+  async getPresenceInspections(): Promise<unknown[]> {
+    this.requireAuth();
+    return presence.getInspections(this.accessToken);
+  }
+
+  /** 출결 통계 */
+  async getPresenceStatistics(): Promise<unknown> {
+    this.requireAuth();
+    return presence.getStatistics(this.accessToken);
+  }
+
+  /** 출결 설정 */
+  async getPresenceSettings(): Promise<unknown> {
+    this.requireAuth();
+    return presence.getSettings(this.accessToken);
   }
 
   // ── Library (libseat, existing) ──

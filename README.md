@@ -25,6 +25,7 @@
 - **도서관 좌석** — 열람실 현황, 물리 배치도, 좌석 px 좌표, 예약/발권/연장/반납
 - **스터디룸/시네마룸/S-Lounge** — 그룹 목록, 시간대별 예약 현황, 예약/취소
 - **예약 내역** — 열람실/스터디룸/시네마룸/S-Lounge 전체 이용 내역
+- **출결** — 출결 기록, 점검, 통계, 설정
 - **날씨** — 현재 기온, 습도, 풍속, 하늘상태 (인증 불필요)
 - **메인 배너** — 대학 홍보 배너 이미지/링크 (인증 불필요)
 - **Pure JSON** — HTML 파싱 없음, 모든 응답이 구조화된 JSON
@@ -126,6 +127,11 @@ const notices = await client.getNotices('academic', { page: 0, size: 5 });
 | `getNotifications({page, size})` | O | 알림 수신함 |
 | `getUnreadCount()` | O | 읽지 않은 알림 수 |
 | `getNotificationSettings()` | O | 알림 설정 |
+| `getStudyRoomReservations()` | O | 스터디룸/시네마/라운지 예약 이력 (sjapp) |
+| `getPresenceRecords()` | O | 출결 기록 |
+| `getPresenceInspections()` | O | 출결 점검 |
+| `getPresenceStatistics()` | O | 출결 통계 |
+| `getPresenceSettings()` | O | 출결 설정 |
 | `getLibraryRooms()` | O | 열람실 좌석 현황 |
 | `getMySeat()` | O | 나의 좌석 |
 | `getSeatMap(roomNo)` | O | 좌석 배치도 (간단) |
@@ -658,6 +664,8 @@ src/
 │   ├── dormitory.ts      # 기숙사 식단
 │   ├── weather.ts        # 날씨
 │   ├── banners.ts        # 메인 배너
+│   ├── studyroom.ts      # 스터디룸 예약 이력 (sjapp)
+│   ├── presence.ts       # 출결
 │   ├── notices.ts        # 공지사항
 │   ├── news.ts           # 세종뉴스
 │   ├── feeds.ts          # 소셜 피드

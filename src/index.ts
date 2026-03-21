@@ -57,6 +57,8 @@ export type { Weather } from "./api/weather.js";
 
 export type { Banner } from "./api/banners.js";
 
+export type { StudyRoomReservation, StudyRoomReservationsResponse } from "./api/studyroom.js";
+
 export type {
   Building,
   Place,
