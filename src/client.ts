@@ -19,7 +19,6 @@ import type { TuitionNoticeResponse, TuitionPaymentResponse } from "./api/tuitio
 import * as timetable from "./api/timetable.js";
 import type { AvailableSemester, TimetableResponse, EnrolledCoursesResponse } from "./api/timetable.js";
 import {
-  acquireLibseatToken,
   fetchRoomList,
   fetchMySeat,
   fetchSeatMap,
@@ -481,35 +480,15 @@ export class SejongClient {
 
   private async ensureLibseat(): Promise<{ http: any; token: string }> {
     this.requireAuth();
-    if (!this.libseatHttp || !this.libseatToken) {
-      // Use sjapp SSO to get portal session, then acquire libseat token
-      const { wrapper } = await import("axios-cookiejar-support");
-      const { CookieJar } = await import("tough-cookie");
-      const jar = new CookieJar();
-      const http = wrapper(axios.create({
-        jar,
-        maxRedirects: 15,
-        timeout: 30000,
-        validateStatus: () => true,
-        headers: { "User-Agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36" },
-      }));
-
-      // Get SSO redirect URL
-      const ssoResp = await axios.post(
-        "https://sjapp.sejong.ac.kr/api/secureapi/sso/external-link",
-        { targetUrl: "https://sjpt.sejong.ac.kr/main/view/Login/doSsoLogin.do?p=" },
-        { headers: { Authorization: `Bearer ${this.accessToken}`, "Content-Type": "application/json" } },
-      );
-      const redirectUrl = ssoResp.data?.data?.redirectUrl;
-      if (redirectUrl) {
-        await http.get(redirectUrl);
-        await http.get("https://sjpt.sejong.ac.kr/main/view/Login/doSsoLogin.do?p=");
-      }
-
-      // Now get libseat token via library redirect
-      this.libseatHttp = http;
-      this.libseatToken = await acquireLibseatToken(http);
+    if (!this.libseatToken) {
+      // Get libseat token directly from sjapp API (no SSO/library.sejong.ac.kr needed)
+      const resp = await axios.get("https://sjapp.sejong.ac.kr/api/secureapi/library/reading-room-token", {
+        headers: { Authorization: `Bearer ${this.accessToken}` },
+      });
+      this.libseatToken = resp.data?.data?.token;
+      if (!this.libseatToken) throw new Error("Failed to get libseat token");
+      this.libseatHttp = axios.create({ timeout: 15000, validateStatus: () => true });
     }
-    return { http: this.libseatHttp, token: this.libseatToken };
+    return { http: this.libseatHttp!, token: this.libseatToken };
   }
 }
